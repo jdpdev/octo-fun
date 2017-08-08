@@ -1,0 +1,180 @@
+:const GROUNDY				23
+:const STATE_WAIT_PITCH		0
+:const STATE_WAIT_SWING		1
+
+:alias ballx 		v7
+:alias bally		v8
+:alias ballxfrac	v9
+:alias ballyfrac	va
+
+# velocity is in fractional units/sec (1px = 255)
+:alias ballvx  		vb
+:alias ballvy  		vc
+:alias ballgravity	vd
+
+:alias gamestate v6
+:alias watchkey v2
+
+: drawball
+	i := ball
+	sprite ballx bally 1
+;
+
+: drawbatter
+	setbatterset
+;
+
+: drawpitcher
+	if gamestate == 0 then setpitcherset
+	if gamestate != 0 then setpitcherpitch
+;
+	
+: setbatterset
+	i := batterset
+	v0 := 55
+	v1 := GROUNDY
+	sprite v0 v1 9
+;
+
+: setpitcherset
+	i := pitcherset
+	v0 := 2
+	v1 := GROUNDY
+	sprite v0 v1 9
+;
+
+: setpitcherpitch
+	i := pitcherthrow
+	v0 := 3
+	v1 := GROUNDY
+	sprite v0 v1 9
+;
+
+# jump table for game states
+: game-state-lookup
+	wait-for-pitch		return
+	wait-for-swing		return
+;
+
+# wait for the pitcher to select a pitch
+: wait-for-pitch
+	watchkey := key	# blocking
+
+	if watchkey > 9 	then return	# ignore out-of-range key
+	if watchkey == 0 	then return
+
+	ballx := 10
+	bally := 25
+
+	ballxfrac := 0
+	ballyfrac := 0
+
+	# high fastball
+	if watchkey == 1 begin			
+		ballvx := 255
+		ballvy := -20
+		ballgravity := 1
+	end
+
+	# med fastball
+	if watchkey == 4 begin			
+		ballvx := 255
+		ballvy := -5
+		ballgravity := 1
+	end
+
+	# low fastball
+	if watchkey == 7 begin			
+		ballvx := 255
+		ballvy := 10
+		ballgravity := 1
+	end
+
+	# high changeup
+	if watchkey == 2 begin			
+		ballvx := 190
+		ballvy := -70
+		ballgravity := 2
+	end
+
+	# med changeup
+	if watchkey == 5 begin			
+		ballvx := 200
+		ballvy := -50
+		ballgravity := 2
+	end
+
+	# low changeup
+	if watchkey == 8 begin			
+		ballvx := 190
+		ballvy := -40
+		ballgravity := 2
+	end
+
+	drawpitcher
+	gamestate := STATE_WAIT_SWING
+
+	drawpitcher
+	drawball
+;
+
+# ball has been pitched, watching for swing or leave
+: wait-for-swing
+	drawball
+
+	# move forward
+	v1 := ballvx
+	ballxfrac += v1
+	ballx += vf
+
+	# apply gravity
+	v1 := ballvy
+	v1 += ballgravity
+	ballvy := v1
+
+	# increment y position
+	v1 := ballvy
+	
+	if ballvy < 128 begin
+		ballyfrac += v1
+		bally += vf
+	else
+		v2 := 255
+		v1 =- v2
+		ballyfrac += v1
+		bally -= vf
+	end
+
+	drawball
+;
+
+: main
+	v3 := 0
+
+	drawbatter
+	drawpitcher
+
+	loop
+		#v0 := v6
+		#v3 := v6
+		#jump0 game-state-lookup
+
+		if gamestate == STATE_WAIT_PITCH then	wait-for-pitch
+		if gamestate == STATE_WAIT_SWING then	wait-for-swing
+	again
+;
+
+: ball
+	0x80
+
+: batterset
+	0x01 0x32 0x14 0x7C 0x38 0x10 0x10 0x28 0x28
+
+: batterhit
+	0x00 0x18 0x08 0xF8 0x08 0x08 0x10 0x2C 0x42
+
+: pitcherset
+	0x18 0x10 0x38 0x38 0x10 0x10 0x28 0x28 0x28 
+
+: pitcherthrow
+	0x00 0x00 0x00 0x14 0x38 0x50 0x10 0x30 0x50
