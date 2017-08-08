@@ -1,6 +1,11 @@
 :const GROUNDY				23
+
+:const HITX					55
+
 :const STATE_WAIT_PITCH		0
 :const STATE_WAIT_SWING		1
+:const STATE_SWING_MISS		2
+:const STATE_SWING_HIT		3
 
 :alias ballx 		v7
 :alias bally		v8
@@ -58,6 +63,7 @@
 
 # wait for the pitcher to select a pitch
 : wait-for-pitch
+	drawpitcher
 	watchkey := key	# blocking
 
 	if watchkey > 9 	then return	# ignore out-of-range key
@@ -111,6 +117,27 @@
 		ballgravity := 2
 	end
 
+	# high curve
+	if watchkey == 3 begin			
+		ballvx := 190
+		ballvy := -110
+		ballgravity := 3
+	end
+
+	# med curve
+	if watchkey == 6 begin			
+		ballvx := 200
+		ballvy := -90
+		ballgravity := 3
+	end
+
+	# low curve
+	if watchkey == 9 begin			
+		ballvx := 190
+		ballvy := -80
+		ballgravity := 3
+	end
+
 	drawpitcher
 	gamestate := STATE_WAIT_SWING
 
@@ -120,12 +147,49 @@
 
 # ball has been pitched, watching for swing or leave
 : wait-for-swing
-	drawball
+
+	# check for swing
+	check-swing
+
+	# move ball
+	move-ball-pitch
+;
+
+# check if the player has swung
+: check-swing
+	if gamestate != STATE_WAIT_SWING then return
+
+	v1 := 0
+
+	# swing high
+	if watchkey == 1 then v1 := 1
+	if watchkey == 4 then v1 := 1
+	if watchkey == 7 then v1 := 1
+
+	if v1 == 1 begin
+
+	end
+;
+
+# step the ball after being pitched
+: move-ball-pitch
+	if gamestate != STATE_WAIT_SWING then return
+
+	v3 := ballx
+	v4 := bally
+	v5 := 0
 
 	# move forward
 	v1 := ballvx
 	ballxfrac += v1
-	ballx += vf
+	v3 += vf
+
+	if v3 >= 60 begin
+		drawball
+		drawpitcher
+		gamestate := STATE_WAIT_PITCH
+		return
+	end
 
 	# apply gravity
 	v1 := ballvy
@@ -137,13 +201,29 @@
 	
 	if ballvy < 128 begin
 		ballyfrac += v1
-		bally += vf
+		v4 += vf
 	else
 		v2 := 255
 		v1 =- v2
 		ballyfrac += v1
-		bally -= vf
+		v4 -= vf
 	end
+
+	if v4 >= 32 begin
+		drawball
+		drawpitcher
+		gamestate := STATE_WAIT_PITCH
+		return
+	end
+
+	if v3 != ballx then if v4 != bally begin
+		v5 := 1
+	end
+
+	drawball
+
+	ballx := v3
+	bally := v4
 
 	drawball
 ;
@@ -152,7 +232,6 @@
 	v3 := 0
 
 	drawbatter
-	drawpitcher
 
 	loop
 		#v0 := v6
