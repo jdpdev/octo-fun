@@ -80,7 +80,6 @@
 : wait-for-pitch
 	if gamestate != STATE_WAIT_PITCH then return
 
-	drawpitcher
 	watchkey := key	# blocking
 
 	if watchkey > 9 	then return	# ignore out-of-range key
@@ -209,6 +208,7 @@
 		end
 
 		goto-strike
+		return
 	end
 
 	# swing mid
@@ -230,6 +230,7 @@
 		end
 
 		goto-good-hit
+		return
 	end
 	
 	# swing low
@@ -251,6 +252,7 @@
 		end
 
 		goto-strike
+		return
 	end
 ;
 
@@ -273,40 +275,13 @@
 : strike-state
 	if gamestate != STATE_STRIKE then return
 
-	move-ball-pitch
+	if ballx < 63 then move-ball-pitch
 
 	v0 := 0xA
 	if v0 key begin
 		drawstrike
 		reset-swing
 	end
-;
-
-: drawstrike
-	v0 := 10
-	v1 := 4
-	i := strikeS
-	sprite v0 v1 15
-
-	v0 += 8
-	i := strikeT
-	sprite v0 v1 15
-
-	v0 += 8
-	i := strikeR
-	sprite v0 v1 15
-
-	v0 += 8
-	i := strikeI
-	sprite v0 v1 15
-
-	v0 += 8
-	i := strikeK
-	sprite v0 v1 15
-
-	v0 += 8
-	i := strikeE
-	sprite v0 v1 15
 ;
 
 : goto-good-hit
@@ -325,6 +300,8 @@
 ;
 
 : reset-swing
+	if gamestate == STATE_WAIT_PITCH then return
+
 	drawpitcher
 	drawbatter
 	drawball
@@ -332,12 +309,11 @@
 	gamestate := STATE_WAIT_PITCH
 
 	drawbatter
+	drawpitcher
 ;
 
 # step the ball after being pitched
 : move-ball-pitch
-	if gamestate != STATE_WAIT_SWING then return
-
 	v3 := ballx
 	v4 := bally
 
@@ -376,6 +352,7 @@
 	#v5 := gamestate
 
 	drawbatter
+	drawpitcher
 
 	#v0 := 2
 	#i := hex gamestate
@@ -409,3 +386,30 @@
 : strikeI 0x00 0x00 0x00 0x7C 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x7C 0x7C 0x00 
 : strikeK 0x00 0x62 0x6E 0x7C 0x78 0x70 0x60 0x78 0x7C 0x7E 0x66 0x42 0x00 0x00 0x00 
 : strikeE 0x00 0x00 0x00 0x3C 0x7C 0x60 0x60 0x78 0x60 0x7E 0x7E 0x7E 0x00 0x00 0x00 
+
+: drawstrike
+	v0 := 10
+	v1 := 4
+	i := strikeS
+	sprite v0 v1 15
+
+	v0 += 8
+	i := strikeT
+	sprite v0 v1 15
+
+	v0 += 8
+	i := strikeR
+	sprite v0 v1 15
+
+	v0 += 8
+	i := strikeI
+	sprite v0 v1 15
+
+	v0 += 8
+	i := strikeK
+	sprite v0 v1 15
+
+	v0 += 8
+	i := strikeE
+	sprite v0 v1 15
+;
