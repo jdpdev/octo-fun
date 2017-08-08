@@ -4,8 +4,13 @@
 
 :const STATE_WAIT_PITCH		0
 :const STATE_WAIT_SWING		1
-:const STATE_SWING_MISS		2
-:const STATE_SWING_HIT		3
+:const STATE_BALL			2
+:const STATE_SWING 			3
+:const STATE_STRIKE			4
+:const STATE_HIT			5
+
+:const HIGH_Y				26
+:const LOW_Y				30
 
 :alias ballx 		v7
 :alias bally		v8
@@ -26,16 +31,24 @@
 ;
 
 : drawbatter
-	setbatterset
+	if gamestate < STATE_SWING  then setbatterset
+	if gamestate >= STATE_SWING then setbatterswing
 ;
 
 : drawpitcher
-	if gamestate == 0 then setpitcherset
-	if gamestate != 0 then setpitcherpitch
+	if gamestate == STATE_WAIT_PITCH then setpitcherset
+	if gamestate != STATE_WAIT_PITCH then setpitcherpitch
 ;
 	
 : setbatterset
 	i := batterset
+	v0 := 55
+	v1 := GROUNDY
+	sprite v0 v1 9
+;
+	
+: setbatterswing
+	i := batterhit
 	v0 := 55
 	v1 := GROUNDY
 	sprite v0 v1 9
@@ -92,13 +105,13 @@
 	# low fastball
 	if watchkey == 7 begin			
 		ballvx := 255
-		ballvy := 10
+		ballvy := 5
 		ballgravity := 1
 	end
 
 	# high changeup
 	if watchkey == 2 begin			
-		ballvx := 190
+		ballvx := 200
 		ballvy := -70
 		ballgravity := 2
 	end
@@ -106,15 +119,15 @@
 	# med changeup
 	if watchkey == 5 begin			
 		ballvx := 200
-		ballvy := -50
+		ballvy := -55
 		ballgravity := 2
 	end
 
 	# low changeup
 	if watchkey == 8 begin			
 		ballvx := 190
-		ballvy := -40
-		ballgravity := 2
+		ballvy := -10
+		ballgravity := 1
 	end
 
 	# high curve
@@ -133,7 +146,7 @@
 
 	# low curve
 	if watchkey == 9 begin			
-		ballvx := 190
+		ballvx := 220
 		ballvy := -80
 		ballgravity := 3
 	end
@@ -159,16 +172,129 @@
 : check-swing
 	if gamestate != STATE_WAIT_SWING then return
 
-	v1 := 0
+	v2 := HITX
+
+	if v2 <= ballx then v2 =- ballx
+	if v2 > ballx then v2 -= ballx
 
 	# swing high
-	if watchkey == 1 then v1 := 1
-	if watchkey == 4 then v1 := 1
-	if watchkey == 7 then v1 := 1
+	v0 := 1
+	if v0 key begin
+		if v2 > 2 begin
+			goto-strike
+			return
+		end
 
-	if v1 == 1 begin
+		if bally <= HIGH_Y begin 
+			goto-good-hit
+			return
+		end
 
+		if bally <= LOW_Y begin
+			goto-grounder
+			return
+		end
+
+		goto-strike
 	end
+
+	# swing mid
+	v0 := 2
+	if v0 key begin
+		if v2 > 2 begin
+			goto-strike
+			return
+		end
+
+		if bally >= LOW_Y begin
+			goto-popup
+			return
+		end
+
+		if bally <= LOW_Y begin
+			goto-grounder
+			return
+		end
+
+		goto-good-hit
+	end
+	
+	# swing low
+	v0 := 3
+	if v0 key begin
+		if v2 > 2 begin
+			goto-strike
+			return
+		end
+
+		if bally >= LOW_Y begin
+			goto-good-hit
+			return
+		end
+
+		if bally >= HIGH_Y begin 
+			goto-popup
+			return
+		end
+
+		goto-strike
+	end
+;
+
+: swing 
+	drawbatter
+	gamestate := STATE_SWING
+	drawbatter
+;
+
+: goto-strike
+	swing
+
+	if gamestate != STATE_STRIKE then drawstrike
+
+	gamestate := STATE_STRIKE
+;
+
+: drawstrike
+	v0 := 10
+	v1 := 4
+	i := strikeS
+	sprite v0 v1 15
+
+	v0 += 8
+	i := strikeT
+	sprite v0 v1 15
+
+	v0 += 8
+	i := strikeR
+	sprite v0 v1 15
+
+	v0 += 8
+	i := strikeI
+	sprite v0 v1 15
+
+	v0 += 8
+	i := strikeK
+	sprite v0 v1 15
+
+	v0 += 8
+	i := strikeE
+	sprite v0 v1 15
+;
+
+: goto-good-hit
+	swing
+	gamestate := STATE_HIT
+;
+
+: goto-grounder
+	swing
+	gamestate := STATE_HIT
+;
+
+: goto-popup
+	swing
+	gamestate := STATE_HIT
 ;
 
 # step the ball after being pitched
@@ -184,7 +310,7 @@
 	ballxfrac += v1
 	v3 += vf
 
-	if v3 >= 60 begin
+	if v3 >= 63 begin
 		drawball
 		drawpitcher
 		gamestate := STATE_WAIT_PITCH
@@ -257,3 +383,10 @@
 
 : pitcherthrow
 	0x00 0x00 0x00 0x14 0x38 0x50 0x10 0x30 0x50
+
+: strikeS 0x00 0x3C 0x7E 0x62 0x60 0x60 0x60 0x3C 0x3E 0x06 0x06 0x46 0x7E 0x3C 0x00 
+: strikeT 0x00 0x00 0x3C 0x7E 0x18 0x18 0x18 0x18 0x18 0x18 0x10 0x00 0x00 0x00 0x00 
+: strikeR 0x00 0x38 0x6C 0x66 0x62 0x66 0x6C 0x78 0x78 0x6C 0x6C 0x26 0x06 0x00 0x00 
+: strikeI 0x00 0x00 0x00 0x7C 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x7C 0x7C 0x00 
+: strikeK 0x00 0x62 0x6E 0x7C 0x78 0x70 0x60 0x78 0x7C 0x7E 0x66 0x42 0x00 0x00 0x00 
+: strikeE 0x00 0x00 0x00 0x3C 0x7C 0x60 0x60 0x78 0x60 0x7E 0x7E 0x7E 0x00 0x00 0x00 
