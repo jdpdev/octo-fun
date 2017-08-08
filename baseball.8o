@@ -248,11 +248,19 @@
 ;
 
 : goto-strike
-	swing
-
-	if gamestate != STATE_STRIKE then drawstrike
+	if gamestate != STATE_STRIKE begin 
+		drawstrike
+		swing
+	end
 
 	gamestate := STATE_STRIKE
+
+	watchkey := key
+
+	if watchkey == 0 begin
+		drawstrike
+		reset-swing
+	end
 ;
 
 : drawstrike
@@ -295,6 +303,16 @@
 : goto-popup
 	swing
 	gamestate := STATE_HIT
+;
+
+: reset-swing
+	drawbatter
+	drawpitcher
+	drawball
+
+	gamestate := STATE_WAIT_PITCH
+
+	drawbatter
 ;
 
 # step the ball after being pitched
@@ -366,6 +384,7 @@
 
 		if gamestate == STATE_WAIT_PITCH then	wait-for-pitch
 		if gamestate == STATE_WAIT_SWING then	wait-for-swing
+		if gamestate == STATE_STRIKE	 then 	goto-strike
 	again
 ;
 
