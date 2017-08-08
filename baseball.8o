@@ -3,12 +3,12 @@
 
 :const HITX					55
 
-:const STATE_WAIT_PITCH		0
-:const STATE_WAIT_SWING		1
-:const STATE_BALL			2
-:const STATE_SWING 			3
-:const STATE_STRIKE			4
-:const STATE_HIT			5
+:const STATE_WAIT_PITCH		0b00000001
+:const STATE_WAIT_SWING		0b00000010
+:const STATE_BALL			0b00000100
+:const STATE_SWING 			0b00001000
+:const STATE_STRIKE			0b00010000
+:const STATE_HIT			0b00100000
 
 :const HIGH_Y				26
 :const LOW_Y				30
@@ -23,8 +23,17 @@
 :alias ballvy  		vc
 :alias ballgravity	vd
 
-:alias gamestate v6
+:alias gamestate 	v4
+
+:alias p1score		v5
+:alias p2score		v6
+
 :alias watchkey v2
+
+: getgamestate
+	v0 := 0b01111111
+	v0 &= gamestate
+;
 
 : drawball
 	i := ball
@@ -32,14 +41,14 @@
 ;
 
 : drawbatter
-	if gamestate < STATE_SWING  then setbatterset
-	if gamestate >= STATE_SWING then setbatterswing
+	getgamestate
+	if v0 < STATE_SWING  begin setbatterset else setbatterswing end
 ;
 
 : drawpitcher
 	#:breakpoint drawpitcher
-	if gamestate == STATE_WAIT_PITCH then setpitcherset
-	if gamestate != STATE_WAIT_PITCH then setpitcherpitch
+	getgamestate
+	if v0 == STATE_WAIT_PITCH begin setpitcherset else setpitcherpitch end
 ;
 	
 : setbatterset
@@ -78,7 +87,8 @@
 
 # wait for the pitcher to select a pitch
 : wait-for-pitch
-	if gamestate != STATE_WAIT_PITCH then return
+	getgamestate
+	if v0 != STATE_WAIT_PITCH then return
 
 	watchkey := key	# blocking
 
@@ -163,7 +173,8 @@
 
 # ball has been pitched, watching for swing or leave
 : wait-for-swing
-	if gamestate != STATE_WAIT_SWING then return
+	getgamestate
+	if v0 != STATE_WAIT_SWING then return
 
 	# check for swing
 	check-swing
@@ -171,12 +182,12 @@
 	# move ball
 	move-ball-pitch
 
-	if v3 >= 63 begin
+	if ballx >= 63 begin
 		reset-swing
 		return
 	end
 
-	if v4 >= 32 begin
+	if bally >= 32 begin
 		reset-swing
 		return
 	end
@@ -266,7 +277,8 @@
 ;
 
 : goto-strike
-	if gamestate != STATE_STRIKE begin 
+	getgamestate
+	if v0 != STATE_STRIKE begin 
 		drawstrike
 		swing
 		gamestate := STATE_STRIKE
@@ -276,7 +288,8 @@
 ;
 
 : strike-state
-	if gamestate != STATE_STRIKE then return
+	getgamestate
+	if v0 != STATE_STRIKE then return
 
 	if ballx < 63 then move-ball-pitch
 
@@ -322,7 +335,8 @@
 ;
 
 : reset-swing
-	if gamestate == STATE_WAIT_PITCH then return
+	getgamestate
+	if v0 == STATE_WAIT_PITCH then return
 
 	drawpitcher
 	drawbatter
@@ -336,15 +350,15 @@
 
 # step the ball after being pitched
 : move-ball-pitch
-	if gamestate == STATE_HIT then return
+	getgamestate
+	if v0 == STATE_HIT then return
 
-	v3 := ballx
-	v4 := bally
+	drawball
 
 	# move forward
 	v1 := ballvx
 	ballxfrac += v1
-	v3 += vf
+	ballx += vf
 
 	# apply gravity
 	v1 := ballvy
@@ -356,66 +370,57 @@
 	
 	if ballvy < 128 begin	# numbers >=128 are negative
 		ballyfrac += v1
-		v4 += vf
+		bally += vf
 	else
 		v2 := 255
 		v1 =- v2
 		ballyfrac += v1
-		v4 -= vf
+		bally -= vf
 	end
-
-	drawball
-
-	ballx := v3
-	bally := v4
 
 	drawball
 ;
 
 : move-ball-hit
-	v3 := ballx
-	v4 := bally
+
+	drawball
 
 	# move x
 	v1 := ballvx
 	ballxfrac += v1
-	v3 -= vf
+	ballx -= vf
 
 	# move y
 	v1 := ballvy
 	ballyfrac += v1
 
 	if ballgravity == 1 begin
-		v4 -= vf
+		bally -= vf
 	else
-		v4 += vf
+		bally += vf
 
-		if v4 == 31 then ballgravity := 1
+		if bally == 31 then ballgravity := 1
 	end
 
-	drawball
-
-	ballx := v3
-	bally := v4
 
 	drawball
 ;
 
 : main
-	#v5 := gamestate
+	p1score := 0
+	p2score := 0
+	gamestate := STATE_WAIT_PITCH
 
 	drawbatter
 	drawpitcher
 
-	#v0 := 2
-	#i := hex gamestate
-	#sprite v0 v0 5
-
 	loop
-		if gamestate == STATE_WAIT_PITCH then	wait-for-pitch
-		if gamestate == STATE_WAIT_SWING then	wait-for-swing
-		if gamestate == STATE_STRIKE	 then 	strike-state
-		if gamestate == STATE_HIT		 then 	hit-state
+		#:breakpoint main
+		getgamestate
+		if v0 == STATE_WAIT_PITCH then	wait-for-pitch
+		if v0 == STATE_WAIT_SWING then	wait-for-swing
+		if v0 == STATE_STRIKE	 then 	strike-state
+		if v0 == STATE_HIT		 then 	hit-state
 	again
 ;
 
