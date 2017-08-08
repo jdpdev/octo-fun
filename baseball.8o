@@ -219,12 +219,12 @@
 			return
 		end
 
-		if bally >= LOW_Y begin
+		if bally < HIGH_Y begin
 			goto-popup
 			return
 		end
 
-		if bally <= LOW_Y begin
+		if bally > LOW_Y begin
 			goto-grounder
 			return
 		end
@@ -260,6 +260,9 @@
 	drawbatter
 	gamestate := STATE_SWING
 	drawbatter
+
+	ballxfrac := 0
+	ballyfrac := 0
 ;
 
 : goto-strike
@@ -287,16 +290,35 @@
 : goto-good-hit
 	swing
 	gamestate := STATE_HIT
+
+	#:breakpoint goto-good-hit
+	ballvx := 255
+	ballvy := 160
+	ballgravity := 1
 ;
 
 : goto-grounder
 	swing
 	gamestate := STATE_HIT
+
+	#:breakpoint goto-grounder
+	ballvx := 255
+	ballvy := 50
+	ballgravity := 2
 ;
 
 : goto-popup
+	#:breakpoint goto-popup
 	swing
 	gamestate := STATE_HIT
+
+	ballvx := 30
+	ballvy := 180
+	ballgravity := 1
+;
+
+: hit-state
+	move-ball-hit
 ;
 
 : reset-swing
@@ -314,6 +336,8 @@
 
 # step the ball after being pitched
 : move-ball-pitch
+	if gamestate == STATE_HIT then return
+
 	v3 := ballx
 	v4 := bally
 
@@ -330,7 +354,7 @@
 	# increment y position
 	v1 := ballvy
 	
-	if ballvy < 128 begin
+	if ballvy < 128 begin	# numbers >=128 are negative
 		ballyfrac += v1
 		v4 += vf
 	else
@@ -338,6 +362,35 @@
 		v1 =- v2
 		ballyfrac += v1
 		v4 -= vf
+	end
+
+	drawball
+
+	ballx := v3
+	bally := v4
+
+	drawball
+;
+
+: move-ball-hit
+	v3 := ballx
+	v4 := bally
+
+	# move x
+	v1 := ballvx
+	ballxfrac += v1
+	v3 -= vf
+
+	# move y
+	v1 := ballvy
+	ballyfrac += v1
+
+	if ballgravity == 1 begin
+		v4 -= vf
+	else
+		v4 += vf
+
+		if v4 == 31 then ballgravity := 1
 	end
 
 	drawball
@@ -362,6 +415,7 @@
 		if gamestate == STATE_WAIT_PITCH then	wait-for-pitch
 		if gamestate == STATE_WAIT_SWING then	wait-for-swing
 		if gamestate == STATE_STRIKE	 then 	strike-state
+		if gamestate == STATE_HIT		 then 	hit-state
 	again
 ;
 
