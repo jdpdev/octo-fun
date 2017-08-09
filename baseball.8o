@@ -352,7 +352,7 @@
 
 	#:breakpoint goto-grounder
 	ballvx := 160
-	ballvy := 30
+	ballvy := 50
 	ballgravity := 2
 ;
 
@@ -389,12 +389,15 @@
 	getgamestate
 	if v0 == STATE_HIT then return
 
+	v3 := ballx
+	ve := bally
+
 	drawball
 
 	# move forward
 	v1 := ballvx
 	ballxfrac += v1
-	ballx += vf
+	v3 += vf
 
 	# apply gravity
 	v1 := ballvy
@@ -404,42 +407,76 @@
 	# increment y position
 	v1 := ballvy
 	
-	if ballvy < 128 begin	# numbers >=128 are negative
+	# using < overwrites ve, so use bitmagic instead
+	# to determine if the velocity is negative or not
+	v2 := 0b10000000
+	v2 &= ballvy
+	if v2 == 0 begin	# numbers >=128 are negative
 		ballyfrac += v1
-		bally += vf
+		ve += vf
 	else
 		v2 := 255
 		v1 =- v2
 		ballyfrac += v1
-		bally -= vf
+		ve -= vf
 	end
+
+	ballx := v3
+	bally := ve
 
 	drawball
 ;
 
+: blarg
+	# determine if re-draw needed
+	vf := 0
+	if v3 != ballx then vf := 1
+
+	v0 := 1
+	if ve != bally then vf |= v0
+	if vf == 1 begin
+		drawball
+		ballx := v3
+		bally := ve
+		drawball
+	end
+;
+
 : move-ball-hit
 
-	drawball
+	v3 := ballx
+	ve := bally
 
 	# move x
 	v1 := ballvx
 	ballxfrac += v1
-	ballx -= vf
+	v3 -= vf
 
 	# move y
 	v1 := ballvy
 	ballyfrac += v1
 
 	if ballgravity == 1 begin
-		bally -= vf
+		ve -= vf
 	else
-		bally += vf
+		ve += vf
 
 		if bally == 31 then ballgravity := 1
 	end
 
+	vf := 0
+	if v3 != ballx then vf := 1
 
-	drawball
+	v0 := 1
+	if ve != bally then vf |= v0
+	if vf == 1 begin
+		drawball
+		ballx := v3
+		bally := ve
+		drawball
+	else
+		return
+	end
 
 	# check x extent
 	if ballx == 0 begin
