@@ -98,6 +98,7 @@
 	sprite ballx bally 1
 ;
 
+# selects batter sprite based on game state
 : drawbatter
 	getgamestate
 
@@ -108,6 +109,7 @@
 	if v0 == 0 then setbatterswing
 ;
 
+# selects pitcher sprite based on game state
 : drawpitcher
 	#:breakpoint drawpitcher
 	getgamestate
@@ -122,6 +124,7 @@
 	if v2 != 0 then setpitcherpitch
 ;
 	
+# draw the batter set sprite
 : setbatterset
 	i := batterset
 	v0 := 55
@@ -129,6 +132,7 @@
 	sprite v0 v1 9
 ;
 	
+# draw the batter swing sprite
 : setbatterswing
 	i := batterhit
 	v0 := 53
@@ -136,6 +140,7 @@
 	sprite v0 v1 9
 ;
 
+# draw the pitcher set sprite
 : setpitcherset
 	#:breakpoint setpitcherset
 	i := pitcherset
@@ -144,6 +149,7 @@
 	sprite v0 v1 9
 ;
 
+# draw the pitcher windup sprite
 : setpitcherwindup
 	#:breakpoint setpitcherwindup
 	i := pitcherwindup
@@ -152,6 +158,7 @@
 	sprite v0 v1 9
 ;
 
+# draw the pitcher pitch sprite
 : setpitcherpitch
 	#:breakpoint setpitcherpitch
 	i := pitcherthrow
@@ -160,20 +167,14 @@
 	sprite v0 v1 9
 ;
 
+# goto STATE_WAIT_PITCH
 : goto-wait-for-pitch
-	# Team 0 is player batting
-	#getbattingteam
-	#if v0 == 0 begin
-	#	v0 := 120
-	#	delay := v0
-	#end
-
 	gamestate := STATE_WAIT_PITCH
 	drawbatter
 	drawpitcher
 ;
 
-# wait for the pitcher to select a pitch
+# watch for pitcher to select a pitch
 : wait-for-pitch
 	getgamestate
 	if v0 != STATE_WAIT_PITCH then return
@@ -201,15 +202,14 @@
 	goto-windup
 ;
 
+# goto STATE_WINDUP
 : goto-windup
-	#v0 := 60
-	#delay := v0
-
 	drawpitcher
 	gamestate := STATE_WINDUP
 	drawpitcher
 ;
 
+# wait for the windup delay to count down
 : windup-state
 	getgamestate
 	if v0 != STATE_WINDUP then return
@@ -225,6 +225,7 @@
 	pitch-ball
 ;
 
+# throw the selected pitch
 : pitch-ball
 	ballx := 10
 	bally := BALL_Y
@@ -325,7 +326,7 @@
 	end
 ;
 
-# check if the player has swung
+# check if the player has swung and calculate the result
 : check-swing
 	v2 := HITX
 
@@ -410,6 +411,7 @@
 	ballyfrac := 0
 ;
 
+# goto the strike state
 : goto-strike
 	getgamestate
 	if v0 != STATE_STRIKE begin 
@@ -422,6 +424,7 @@
 	strike-state
 ;
 
+# wait for key press to exit strike state
 : strike-state
 	getgamestate
 	if v0 != STATE_STRIKE then return
@@ -435,6 +438,7 @@
 	end
 ;
 
+# process a good hit
 : goto-good-hit
 	v2 := STATE_HIT
 	swing
@@ -445,6 +449,7 @@
 	ballgravity := 1
 ;
 
+# process a grounder hit
 : goto-grounder
 	v2 := STATE_HIT
 	swing
@@ -455,6 +460,7 @@
 	ballgravity := 2
 ;
 
+# process a popup hit
 : goto-popup
 	#:breakpoint goto-popup
 	v2 := STATE_HIT
@@ -465,10 +471,12 @@
 	ballgravity := 1
 ;
 
+# logic loop while in STATE_HIT
 : hit-state
 	move-ball-hit
 ;
 
+# reset the batter, pitcher, and ball for a new pitch
 : reset-swing
 	getgamestate
 	if v0 == STATE_WAIT_PITCH then return
@@ -523,21 +531,7 @@
 	drawball
 ;
 
-: blarg
-	# determine if re-draw needed
-	vf := 0
-	if v3 != ballx then vf := 1
-
-	v0 := 1
-	if ve != bally then vf |= v0
-	if vf == 1 begin
-		drawball
-		ballx := v3
-		bally := ve
-		drawball
-	end
-;
-
+# step the ball after being hit
 : move-ball-hit
 
 	v3 := ballx
@@ -589,11 +583,13 @@
 	end
 ;
 
+# process being out
 : goto-out
 	add-to-outs
 	reset-swing
 ;
 
+# process a home run
 : goto-home-run
 	add-to-score
 	reset-swing
@@ -633,6 +629,7 @@
 	va += 5
 ;
 
+# add to the out count
 : add-to-outs
 	drawouts
 	outs += 1
