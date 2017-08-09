@@ -29,9 +29,8 @@
 :const STATE_WAIT_PITCH		0b00000001 	# Waiting to pitch the ball
 :const STATE_WINDUP			0b00000010  # Winding up before pitch
 :const STATE_WAIT_SWING		0b00000100  # Ball pitched, waiting for swing
-:const STATE_SWING 			0b00001000  # 
-:const STATE_STRIKE			0b00010000  # Swung and missed
-:const STATE_HIT			0b00100000  # Ball in play after being hit
+:const STATE_STRIKE			0b00001000  # Swung and missed
+:const STATE_HIT			0b00010000  # Ball in play after being hit
 
 :const GROUND_Y		23	# y position to draw player sprites at
 :const BALL_Y		25	# y position to spawn ball at on pitch
