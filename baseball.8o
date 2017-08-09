@@ -1,3 +1,29 @@
+# ################################################################################
+#	HOME RUN DERBY 
+#		Hit as many home runs as you can before you run out of outs.
+#		(100 cycles/frame recommended)
+#	
+#	* Pitcher Controls
+#		Fastball: 	1 high, Q mid, A low
+#		Changeup: 	2 high, W mid, S low
+#		Curve:		3 high, E mid, D low
+#		
+#	* Batter Controls
+#		Swing high: 1
+#		Swing mid:	2
+#		Swing low:	3
+#		
+#	Hit the solid border to score a run, hit the dotted border to hit an out.
+#	Combine swing timing and height to hit a home run.
+#	Missing timing or height will result in a mis-hit. 
+#
+#	TODO:
+#		* Swap teams after certain number of outs
+#		* Add AI for single-player mode
+#		* Fine-tune hitting algorithm for a wider range of angles off the bat
+#
+# ################################################################################
+
 :const GROUND_Y				23
 :const BALL_Y				25
 
