@@ -35,6 +35,21 @@
 	v0 &= gamestate
 ;
 
+: getbattingteam
+	v0 := 0b10000000
+	v0 &= gamestate	
+;
+
+: drawscore
+	getbattingteam
+
+	if v0 == 0 begin
+		v0 := p1score
+	else
+		v0 := p2score
+	end
+;
+
 : drawball
 	i := ball
 	sprite ballx bally 1
