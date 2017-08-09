@@ -26,50 +26,69 @@
 #
 # ################################################################################
 
-:const GROUND_Y				23
-:const BALL_Y				25
+:const STATE_WAIT_PITCH		0b00000001 	# Waiting to pitch the ball
+:const STATE_WINDUP			0b00000010  # Winding up before pitch
+:const STATE_WAIT_SWING		0b00000100  # Ball pitched, waiting for swing
+:const STATE_SWING 			0b00001000  # 
+:const STATE_STRIKE			0b00010000  # Swung and missed
+:const STATE_HIT			0b00100000  # Ball in play after being hit
 
-:const HITX					55
+:const GROUND_Y		23	# y position to draw player sprites at
+:const BALL_Y		25	# y position to spawn ball at on pitch
 
-:const STATE_WAIT_PITCH		0b00000001
-:const STATE_WINDUP			0b00000010
-:const STATE_WAIT_SWING		0b00000100
-:const STATE_SWING 			0b00001000
-:const STATE_STRIKE			0b00010000
-:const STATE_HIT			0b00100000
+:const HITX			55	# x position of where ball is to ideally hit it
 
-:const HIGH_Y		26
-:const LOW_Y		30
+:const HIGH_Y		26	# y position of the high bound of the strike zone
+:const LOW_Y		30	# y position of the low bound of the strike zone
 
-:const LEFT_HR_Y	10
-:const TOP_HR_X		32
+:const LEFT_HR_Y	10	# vertical position of home run area
+:const TOP_HR_X		32	# horizontal position of the home run area
 
-:alias ballx 		v7
-:alias bally		v8
-:alias ballxfrac	v9
-:alias ballyfrac	va
+:alias ballx 		v7	# x pos of the ball
+:alias bally		v8  # y pos of the ball
+:alias ballxfrac	v9  # x fractional position
+:alias ballyfrac	va  # y fractional position
 
 # velocity is in fractional units/sec (1px = 255)
-:alias ballvx  		vb
-:alias ballvy  		vc
-:alias ballgravity	vd
+:alias ballvx  		vb  # x speed
+:alias ballvy  		vc  # y speed
+:alias ballgravity	vd  # acceleration on the ball while being pitched
+						# OR direction of y speed after being hit
 
 # The selected pitch before being thrown
 # ve is overwritten by comparison operators, so it has limited useful scope
 :alias windup-pitch ve
 
-:alias gamestate 	v4
+:alias gamestate 	v4	# first bit is which team is batting, other bits are game state
 
-:alias outs			v5
-:alias score		v6
+:alias outs			v5	# number of outs
+:alias score		v6	# current score
 
-:alias watchkey v2
+: main
+	score-borders
+	drawscore
+	drawouts
 
+	goto-wait-for-pitch
+
+	loop
+		#:breakpoint main
+		getgamestate
+		if v0 == STATE_WAIT_PITCH then	wait-for-pitch
+		if v0 == STATE_WINDUP 	  then	windup-state
+		if v0 == STATE_WAIT_SWING then	wait-for-swing
+		if v0 == STATE_STRIKE	 then 	strike-state
+		if v0 == STATE_HIT		 then 	hit-state
+	again
+;
+
+# sets to v0 the current state of the game
 : getgamestate
 	v0 := 0b01111111
 	v0 &= gamestate
 ;
 
+# sets to v0 the id of the team currently batting
 : getbattingteam
 	v0 := 0b10000000
 	v0 &= gamestate	
@@ -113,7 +132,7 @@
 	
 : setbatterswing
 	i := batterhit
-	v0 := 55
+	v0 := 53
 	v1 := GROUND_Y
 	sprite v0 v1 9
 ;
@@ -381,9 +400,11 @@
 	end
 ;
 
+# move batter to swing state
+# sets the game state to value set in v2 (v0 and v1 are used to draw sprite)
 : swing 
 	drawbatter
-	gamestate := STATE_SWING
+	gamestate := v2
 	drawbatter
 
 	ballxfrac := 0
@@ -394,8 +415,9 @@
 	getgamestate
 	if v0 != STATE_STRIKE begin 
 		drawstrike
+
+		v2 := STATE_STRIKE
 		swing
-		gamestate := STATE_STRIKE
 	end
 
 	strike-state
@@ -415,8 +437,8 @@
 ;
 
 : goto-good-hit
+	v2 := STATE_HIT
 	swing
-	gamestate := STATE_HIT
 
 	#:breakpoint goto-good-hit
 	ballvx := 100
@@ -425,8 +447,8 @@
 ;
 
 : goto-grounder
+	v2 := STATE_HIT
 	swing
-	gamestate := STATE_HIT
 
 	#:breakpoint goto-grounder
 	ballvx := 160
@@ -436,8 +458,8 @@
 
 : goto-popup
 	#:breakpoint goto-popup
+	v2 := STATE_HIT
 	swing
-	gamestate := STATE_HIT
 
 	ballvx := 10
 	ballvy := 100
@@ -626,24 +648,7 @@
 	sprite va vb 5
 ;
 
-: main
-	score-borders
-	drawscore
-	drawouts
-
-	goto-wait-for-pitch
-
-	loop
-		#:breakpoint main
-		getgamestate
-		if v0 == STATE_WAIT_PITCH then	wait-for-pitch
-		if v0 == STATE_WINDUP 	  then	windup-state
-		if v0 == STATE_WAIT_SWING then	wait-for-swing
-		if v0 == STATE_STRIKE	 then 	strike-state
-		if v0 == STATE_HIT		 then 	hit-state
-	again
-;
-
+# draw the scoring borders
 : score-borders
 	# left score
 	v0 := 0
@@ -711,6 +716,7 @@
 : pitcherthrow
 	0x00 0x0C 0x08 0x1E 0x18 0x38 0xF0 0x10 0x10
 
+# Letters for the strike screen
 : strikeS 0x00 0x3C 0x7E 0x62 0x60 0x60 0x60 0x3C 0x3E 0x06 0x06 0x46 0x7E 0x3C 0x00 
 : strikeT 0x00 0x00 0x3C 0x7E 0x18 0x18 0x18 0x18 0x18 0x18 0x10 0x00 0x00 0x00 0x00 
 : strikeR 0x00 0x38 0x6C 0x66 0x62 0x66 0x6C 0x78 0x78 0x6C 0x6C 0x26 0x06 0x00 0x00 
@@ -718,6 +724,7 @@
 : strikeK 0x00 0x62 0x6E 0x7C 0x78 0x70 0x60 0x78 0x7C 0x7E 0x66 0x42 0x00 0x00 0x00 
 : strikeE 0x00 0x00 0x00 0x3C 0x7C 0x60 0x60 0x78 0x60 0x7E 0x7E 0x7E 0x00 0x00 0x00 
 
+# Draw the strike icon
 : drawstrike
 	v0 := 8
 	v1 := 4
