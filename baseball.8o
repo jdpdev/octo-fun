@@ -10,8 +10,11 @@
 :const STATE_STRIKE			0b00010000
 :const STATE_HIT			0b00100000
 
-:const HIGH_Y				26
-:const LOW_Y				30
+:const HIGH_Y		26
+:const LOW_Y		30
+
+:const LEFT_HR_Y	10
+:const TOP_HR_X		32
 
 :alias ballx 		v7
 :alias bally		v8
@@ -412,14 +415,14 @@
 
 	# check x extent
 	if ballx == 0 begin
-		if bally < 5 	then jump goto-home-run
-		if bally > 28	then jump goto-out
+		if bally < LEFT_HR_Y 	then jump goto-home-run
+		goto-out
 		reset-swing
 		return
 	end
 
 	if bally == 0 begin
-		if ballx < 30	then jump goto-home-run
+		if ballx < TOP_HR_X	then jump goto-home-run
 		goto-out
 		return
 	end
@@ -487,6 +490,7 @@
 	score := 0
 	gamestate := STATE_WAIT_PITCH
 
+	score-borders
 	drawbatter
 	drawpitcher
 	drawscore
@@ -501,6 +505,53 @@
 		if v0 == STATE_HIT		 then 	hit-state
 	again
 ;
+
+: score-borders
+	# left score
+	v0 := 0
+	v1 := 0
+	i := left-score-border
+	sprite v0 v1 LEFT_HR_Y
+
+	# top
+	i := top-score-border
+	v0 := 8
+	sprite v0 v1 1
+	v0 := 16
+	sprite v0 v1 1
+	v0 := 24
+	sprite v0 v1 1
+
+	# left out
+	v0 := 0
+	v1 := LEFT_HR_Y
+	i := left-out-border
+	sprite v0 v1 15
+
+	i := left-out-border-alt
+	v1 := 25
+	sprite v0 v1 7
+
+	# top out
+	v0 := TOP_HR_X
+	v1 := 0
+	i := top-out-border
+	
+	sprite v0 v1 1
+	v0 += 8
+	sprite v0 v1 1
+	v0 += 8
+	sprite v0 v1 1
+	v0 += 8
+	sprite v0 v1 1
+;
+
+: left-score-border 0xFF 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0x80
+: left-out-border 0x00 0xB8 0x28 0xB8 0x00 0xA8 0x38 0x80 0x38 0x90 0x10 0x80 0x00 0x80 0x00 
+: left-out-border-alt 0x80 0x00 0x80 0x00 0x80 0x00 0x80
+
+: top-score-border 0xFF
+: top-out-border 0x55
 
 : digits 0 0 0
 
