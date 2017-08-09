@@ -25,8 +25,8 @@
 
 :alias gamestate 	v4
 
-:alias p1score		v5
-:alias p2score		v6
+:alias outs			v5
+:alias score		v6
 
 :alias watchkey v2
 
@@ -38,16 +38,6 @@
 : getbattingteam
 	v0 := 0b10000000
 	v0 &= gamestate	
-;
-
-: drawscore
-	getbattingteam
-
-	if v0 == 0 begin
-		v0 := p1score
-	else
-		v0 := p2score
-	end
 ;
 
 : drawball
@@ -419,15 +409,88 @@
 
 
 	drawball
+
+	# check x extent
+	if ballx == 0 begin
+		if bally < 5 	then jump goto-home-run
+		if bally > 28	then jump goto-out
+		reset-swing
+		return
+	end
+
+	if bally == 0 begin
+		if ballx < 30	then jump goto-home-run
+		goto-out
+		return
+	end
+;
+
+: goto-out
+	add-to-outs
+	reset-swing
+;
+
+: goto-home-run
+	add-to-score
+	reset-swing
+;
+
+# adds one to the score
+: add-to-score
+	drawscore
+	score += 1
+	drawscore	
+;
+
+: drawscore
+	i := digits
+	bcd score
+
+	# registers beyond bally (v8) don't need to be persisted at this point
+	load v2
+
+	va := 48
+	vb := 2
+
+	if score > 99 begin
+		i := hex v0
+		sprite va vb 5
+	end
+	va += 5
+
+	if score > 9 begin
+		i := hex v1
+		sprite va vb 5
+	end
+	va += 5
+
+	i := hex v2
+	sprite va vb 5
+	va += 5
+;
+
+: add-to-outs
+	drawouts
+	outs += 1
+	drawouts
+;
+
+: drawouts
+	# registers beyond bally (v8) don't need to be persisted at this point
+	va := 58
+	vb := 8
+	i := hex outs
+	sprite va vb 5
 ;
 
 : main
-	p1score := 0
-	p2score := 0
+	score := 0
 	gamestate := STATE_WAIT_PITCH
 
 	drawbatter
 	drawpitcher
+	drawscore
+	drawouts
 
 	loop
 		#:breakpoint main
@@ -438,6 +501,8 @@
 		if v0 == STATE_HIT		 then 	hit-state
 	again
 ;
+
+: digits 0 0 0
 
 : ball
 	0x80
