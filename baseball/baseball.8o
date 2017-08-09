@@ -26,11 +26,14 @@
 #
 # ################################################################################
 
-:const STATE_WAIT_PITCH		0b00000001 	# Waiting to pitch the ball
-:const STATE_WINDUP			0b00000010  # Winding up before pitch
-:const STATE_WAIT_SWING		0b00000100  # Ball pitched, waiting for swing
-:const STATE_STRIKE			0b00001000  # Swung and missed
-:const STATE_HIT			0b00010000  # Ball in play after being hit
+:const STATE_WAIT_PITCH		1 	# Waiting to pitch the ball
+:const STATE_WINDUP			2  # Winding up before pitch
+:const STATE_WAIT_SWING		3  # Ball pitched, waiting for swing
+:const STATE_STRIKE			4  # Swung and missed
+:const STATE_HIT			5  # Ball in play after being hit
+
+:const MASK_GAMESTATE		0b00001111
+:const MASK_PLAYER_TURN		0b10000000
 
 :const GROUND_Y		23	# y position to draw player sprites at
 :const BALL_Y		25	# y position to spawn ball at on pitch
@@ -83,13 +86,13 @@
 
 # sets to v0 the current state of the game
 : getgamestate
-	v0 := 0b01111111
+	v0 := MASK_GAMESTATE
 	v0 &= gamestate
 ;
 
 # sets to v0 the id of the team currently batting
 : getbattingteam
-	v0 := 0b10000000
+	v0 := MASK_PLAYER_TURN
 	v0 &= gamestate	
 ;
 
@@ -102,11 +105,11 @@
 : drawbatter
 	getgamestate
 
-	v1 := 0b00000111
-	v0 &= v1
-
-	if v0 != 0 then setbatterset 
-	if v0 == 0 then setbatterswing
+	if v0 == STATE_WAIT_PITCH 	then jump setbatterset 
+	if v0 == STATE_WINDUP 		then jump setbatterset
+	if v0 == STATE_WAIT_SWING 	then jump setbatterset
+	if v0 == STATE_STRIKE 		then jump setbatterswing
+	if v0 == STATE_HIT 			then jump setbatterswing
 ;
 
 # selects pitcher sprite based on game state
@@ -117,11 +120,7 @@
 	if v0 == STATE_WAIT_PITCH 	then jump setpitcherset
 	if v0 == STATE_WINDUP		then jump setpitcherwindup
 
-	v1 := 0b11111100
-	v2 := v0
-	v2 &= v1
-
-	if v2 != 0 then setpitcherpitch
+	setpitcherpitch
 ;
 	
 # draw the batter set sprite
@@ -723,7 +722,7 @@
 # Draw the strike icon
 : drawstrike
 	v0 := 8
-	v1 := 4
+	v1 := 7
 	i := strikeS
 	sprite v0 v1 15
 
