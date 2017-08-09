@@ -32,8 +32,8 @@
 :const HITX					55
 
 :const STATE_WAIT_PITCH		0b00000001
-:const STATE_WAIT_SWING		0b00000010
-:const STATE_BALL			0b00000100
+:const STATE_WINDUP			0b00000010
+:const STATE_WAIT_SWING		0b00000100
 :const STATE_SWING 			0b00001000
 :const STATE_STRIKE			0b00010000
 :const STATE_HIT			0b00100000
@@ -53,6 +53,10 @@
 :alias ballvx  		vb
 :alias ballvy  		vc
 :alias ballgravity	vd
+
+# The selected pitch before being thrown
+# ve is overwritten by comparison operators, so it has limited useful scope
+:alias windup-pitch ve
 
 :alias gamestate 	v4
 
@@ -78,13 +82,26 @@
 
 : drawbatter
 	getgamestate
-	if v0 < STATE_SWING  begin setbatterset else setbatterswing end
+
+	v1 := 0b00000111
+	v0 &= v1
+
+	if v0 != 0 then setbatterset 
+	if v0 == 0 then setbatterswing
 ;
 
 : drawpitcher
 	#:breakpoint drawpitcher
 	getgamestate
-	if v0 == STATE_WAIT_PITCH begin setpitcherset else setpitcherpitch end
+
+	if v0 == STATE_WAIT_PITCH 	then jump setpitcherset
+	if v0 == STATE_WINDUP		then jump setpitcherwindup
+
+	v1 := 0b11111100
+	v2 := v0
+	v2 &= v1
+
+	if v2 != 0 then setpitcherpitch
 ;
 	
 : setbatterset
@@ -102,23 +119,40 @@
 ;
 
 : setpitcherset
+	#:breakpoint setpitcherset
 	i := pitcherset
 	v0 := 2
 	v1 := GROUND_Y
 	sprite v0 v1 9
 ;
 
+: setpitcherwindup
+	#:breakpoint setpitcherwindup
+	i := pitcherwindup
+	v0 := 2
+	v1 := GROUND_Y
+	sprite v0 v1 9
+;
+
 : setpitcherpitch
+	#:breakpoint setpitcherpitch
 	i := pitcherthrow
 	v0 := 4
 	v1 := GROUND_Y
 	sprite v0 v1 9
 ;
 
-# jump table for game states
-: game-state-lookup
-	wait-for-pitch		return
-	wait-for-swing		return
+: goto-wait-for-pitch
+	# Team 0 is player batting
+	#getbattingteam
+	#if v0 == 0 begin
+	#	v0 := 120
+	#	delay := v0
+	#end
+
+	gamestate := STATE_WAIT_PITCH
+	drawbatter
+	drawpitcher
 ;
 
 # wait for the pitcher to select a pitch
@@ -126,11 +160,54 @@
 	getgamestate
 	if v0 != STATE_WAIT_PITCH then return
 
-	watchkey := key	# blocking
+	# Team 0 is player batting
+	getbattingteam
+	if v0 == 1 begin
+		windup-pitch := key	# blocking
 
-	if watchkey > 9 	then return	# ignore out-of-range key
-	if watchkey == 0 	then return
+		if windup-pitch > 9 	then return	# ignore out-of-range key
+		if windup-pitch == 0 	then return
+	else
+		vf := 120
+		delay := vf
 
+		loop
+			vf := delay
+			if vf != 0 then
+		again
+
+		windup-pitch := random 0b00000111
+		windup-pitch += 1
+	end
+
+	goto-windup
+;
+
+: goto-windup
+	#v0 := 60
+	#delay := v0
+
+	drawpitcher
+	gamestate := STATE_WINDUP
+	drawpitcher
+;
+
+: windup-state
+	getgamestate
+	if v0 != STATE_WINDUP then return
+
+	vf := 60
+	delay := vf
+
+	loop
+		vf := delay
+		if vf != 0 then
+	again
+
+	pitch-ball
+;
+
+: pitch-ball
 	ballx := 10
 	bally := BALL_Y
 
@@ -138,68 +215,69 @@
 	ballyfrac := 0
 
 	# high fastball
-	if watchkey == 1 begin			
+	if windup-pitch == 1 begin			
 		ballvx := 255
 		ballvy := -20
 		ballgravity := 1
 	end
 
 	# med fastball
-	if watchkey == 4 begin			
+	if windup-pitch == 4 begin			
 		ballvx := 255
 		ballvy := -5
 		ballgravity := 1
 	end
 
 	# low fastball
-	if watchkey == 7 begin			
+	if windup-pitch == 7 begin			
 		ballvx := 255
 		ballvy := 5
 		ballgravity := 1
 	end
 
 	# high changeup
-	if watchkey == 2 begin			
+	if windup-pitch == 2 begin			
 		ballvx := 200
 		ballvy := -70
 		ballgravity := 2
 	end
 
 	# med changeup
-	if watchkey == 5 begin			
+	if windup-pitch == 5 begin			
 		ballvx := 200
 		ballvy := -55
 		ballgravity := 2
 	end
 
 	# low changeup
-	if watchkey == 8 begin			
+	if windup-pitch == 8 begin			
 		ballvx := 190
 		ballvy := -10
 		ballgravity := 1
 	end
 
 	# high curve
-	if watchkey == 3 begin			
+	if windup-pitch == 3 begin			
 		ballvx := 190
 		ballvy := -110
 		ballgravity := 3
 	end
 
 	# med curve
-	if watchkey == 6 begin			
+	if windup-pitch == 6 begin			
 		ballvx := 200
 		ballvy := -90
 		ballgravity := 3
 	end
 
 	# low curve
-	if watchkey == 9 begin			
+	if windup-pitch == 9 begin			
 		ballvx := 220
 		ballvy := -80
 		ballgravity := 3
 	end
 
+	# wait for swing
 	drawpitcher
 	gamestate := STATE_WAIT_SWING
 
@@ -378,10 +456,7 @@
 	drawbatter
 	drawball
 
-	gamestate := STATE_WAIT_PITCH
-
-	drawbatter
-	drawpitcher
+	goto-wait-for-pitch
 ;
 
 # step the ball after being pitched
@@ -552,19 +627,17 @@
 ;
 
 : main
-	score := 0
-	gamestate := STATE_WAIT_PITCH
-
 	score-borders
-	drawbatter
-	drawpitcher
 	drawscore
 	drawouts
+
+	goto-wait-for-pitch
 
 	loop
 		#:breakpoint main
 		getgamestate
 		if v0 == STATE_WAIT_PITCH then	wait-for-pitch
+		if v0 == STATE_WINDUP 	  then	windup-state
 		if v0 == STATE_WAIT_SWING then	wait-for-swing
 		if v0 == STATE_STRIKE	 then 	strike-state
 		if v0 == STATE_HIT		 then 	hit-state
@@ -646,7 +719,7 @@
 : strikeE 0x00 0x00 0x00 0x3C 0x7C 0x60 0x60 0x78 0x60 0x7E 0x7E 0x7E 0x00 0x00 0x00 
 
 : drawstrike
-	v0 := 10
+	v0 := 8
 	v1 := 4
 	i := strikeS
 	sprite v0 v1 15
