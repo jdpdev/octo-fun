@@ -26,11 +26,13 @@
 #
 # ################################################################################
 
-:const STATE_WAIT_PITCH		1 	# Waiting to pitch the ball
+:const STATE_WAIT_PITCH		1  # Waiting to pitch the ball
 :const STATE_WINDUP			2  # Winding up before pitch
 :const STATE_WAIT_SWING		3  # Ball pitched, waiting for swing
 :const STATE_STRIKE			4  # Swung and missed
 :const STATE_HIT			5  # Ball in play after being hit
+:const STATE_SCORE			6
+:const STATE_OUT			7
 
 :const MASK_GAMESTATE		0b00001111
 :const MASK_PLAYER_TURN		0b10000000
@@ -79,8 +81,10 @@
 		if v0 == STATE_WAIT_PITCH then	wait-for-pitch
 		if v0 == STATE_WINDUP 	  then	windup-state
 		if v0 == STATE_WAIT_SWING then	wait-for-swing
-		if v0 == STATE_STRIKE	 then 	strike-state
-		if v0 == STATE_HIT		 then 	hit-state
+		if v0 == STATE_STRIKE	  then 	strike-state
+		if v0 == STATE_HIT		  then 	hit-state
+		if v0 == STATE_SCORE	  then 	home-run-state
+		if v0 == STATE_OUT	  	  then 	out-state
 	again
 ;
 
@@ -108,8 +112,7 @@
 	if v0 == STATE_WAIT_PITCH 	then jump setbatterset 
 	if v0 == STATE_WINDUP 		then jump setbatterset
 	if v0 == STATE_WAIT_SWING 	then jump setbatterset
-	if v0 == STATE_STRIKE 		then jump setbatterswing
-	if v0 == STATE_HIT 			then jump setbatterswing
+	setbatterswing
 ;
 
 # selects pitcher sprite based on game state
@@ -585,12 +588,32 @@
 # process being out
 : goto-out
 	add-to-outs
+
+	gamestate := STATE_OUT
+	out-state
+;
+
+: out-state
+	drawoutlabel
+
+	v0 := key
+	drawoutlabel
 	reset-swing
 ;
 
 # process a home run
 : goto-home-run
 	add-to-score
+	
+	gamestate := STATE_SCORE
+	home-run-state
+;
+
+: home-run-state
+	drawbooya
+
+	v0 := key
+	drawbooya
 	reset-swing
 ;
 
@@ -744,5 +767,61 @@
 
 	v0 += 8
 	i := strikeE
+	sprite v0 v1 15
+;
+
+: booyaB 0x00 0x72 0x7E 0x66 0x62 0x62 0x26 0x2C 0x3C 0x36 0x22 0x32 0x7C 0x40
+: booyaO 0x00 0x00 0x00 0x0C 0x3E 0x26 0x62 0x62 0x62 0x62 0x62 0x66 0x3E 0x1C
+: booyaY 0x00 0x60 0x66 0x66 0x66 0x66 0x7C 0x38 0x18 0x0E 0x06
+: booyaA 0x00 0x00 0x0C 0x0E 0x1E 0x12 0x12 0x32 0x3E 0x26 0x22 0x62 0x42 0x02
+
+: drawbooya
+	v0 := 8
+	v1 := 7
+	i := booyaB
+	sprite v0 v1 15
+
+	v0 += 8
+	i := booyaO
+	sprite v0 v1 15
+
+	v0 += 8
+	i := booyaO
+	sprite v0 v1 15
+
+	v0 += 8
+	i := booyaY
+	sprite v0 v1 12
+
+	v0 += 8
+	i := booyaA
+	sprite v0 v1 14
+
+	v0 += 8
+	i := outE
+	sprite v0 v1 14
+;
+
+: outO 0x00 0x3C 0x7E 0x66 0x62 0x62 0x62 0x62 0x62 0x62 0x72 0x7E 0x7E 0x3C
+: outU 0x00 0x00 0x00 0x00 0x66 0x66 0x62 0x62 0x62 0x62 0x62 0x76 0x7E 0x3C
+: outT 0x00 0x7E 0x7E 0x18 0x18 0x18 0x18 0x18 0x1C 0x1C 0x1C
+: outE 0x00 0x1C 0x1C 0x1C 0x1C 0x38 0x38 0x38 0x30 0x70 0x70 0x00 0x60 0x70
+
+: drawoutlabel
+	v0 := 17
+	v1 := 7
+	i := outO
+	sprite v0 v1 15
+
+	v0 += 8
+	i := outU
+	sprite v0 v1 15
+
+	v0 += 8
+	i := outT
+	sprite v0 v1 15
+
+	v0 += 8
+	i := outE
 	sprite v0 v1 15
 ;
