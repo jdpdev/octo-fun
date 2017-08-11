@@ -34,6 +34,7 @@
 :const STATE_HIT			5  # Ball in play after being hit
 :const STATE_SCORE			6
 :const STATE_OUT			7
+:const STATE_GAME_OVER		8
 
 :const MASK_GAMESTATE		0b00001111
 :const MASK_PLAYER_TURN		0b10000000
@@ -73,6 +74,9 @@
 :alias score		v6	# current score
 
 : main
+	#score := 9
+	#gamestate := STATE_GAME_OVER
+
 	loop
 		#:breakpoint main
 		getgamestate
@@ -84,6 +88,7 @@
 		if v0 == STATE_HIT			then 	hit-state
 		if v0 == STATE_SCORE		then 	home-run-state
 		if v0 == STATE_OUT			then 	out-state
+		if v0 == STATE_GAME_OVER	then 	state-game-over
 	again
 ;
 
@@ -95,6 +100,88 @@
 	drawtitlescreen
 	drawpressanykey
 
+	start-gameworld
+;
+
+: state-game-over
+	clear
+
+	# v3 is high score so we can use bcd
+	loadflags v3
+	v5 := v3
+
+	if score > v3 begin
+		draw-new-high-score
+		v3 := score
+	else
+		draw-old-high-score
+	end
+
+	saveflags v3
+
+	va := 7
+	v1 := 4
+	drawgameovertitle
+
+	v0 := key
+
+	clear
+	start-gameworld
+;
+
+: draw-new-high-score
+	va := 10
+	v1 := 18
+	drawnewbest
+
+	va := 38
+	v1 += 6
+	draw-high-score
+
+	va := 10
+	v5 := score
+	draw-high-score
+
+	va := 29
+	i := gt
+	sprite va v1 5
+;
+
+: draw-old-high-score
+	va := 38
+	v1 := 18
+	drawbestlabel
+
+	va := 10
+	drawoldlabel
+
+	va := 38
+	v1 += 6
+	draw-high-score
+
+	va := 10
+	v5 := score
+	draw-high-score
+;
+
+: draw-high-score
+	i := digits
+	bcd v5
+	load v2
+
+	i := hex v0
+	sprite va v1 5
+
+	va += 5
+	i := hex v1
+	sprite va v1 5
+
+	va += 5
+	i := hex v2
+	sprite va v1 5
+;
+
+: start-gameworld
 	score-borders
 	drawscore
 	drawouts
@@ -658,6 +745,9 @@
 : add-to-outs
 	drawouts
 	outs += 1
+
+	if outs == 9 then jump state-game-over
+
     v0 := MASK_OUTS
     outs &= v0
 	drawouts
@@ -947,4 +1037,90 @@
 	v0 += 8
 	i := pressanyEY
 	sprite v0 v1 5
+;
+
+: newbestNE 0xCE 0xAC 0xA8 0xAE
+: newbestW  0x88 0xA8 0xA8 0x50
+: newbestBE 0xEE 0xCC 0xA8 0xEE
+: newbestST 0xEE 0x84 0x64 0xE4
+: newbestEx 0x80 0x80 0x00 0x80
+
+: drawnewbest
+	i := newbestNE
+	sprite va v1 4
+
+	va += 8
+	i := newbestW
+	sprite va v1 4
+
+	va += 8
+	i := newbestBE
+	sprite va v1 4
+
+	va += 8
+	i := newbestST
+	sprite va v1 4
+
+	va += 8
+	i := newbestEx
+	sprite va v1 4
+;
+
+: drawbestlabel
+	i := newbestBE
+	sprite va v1 4
+
+	va += 8
+	i := newbestST
+	sprite va v1 4
+;
+
+: gt 0xC0 0x20 0x10 0x20 0xC0
+: oldOL 0xE8 0xA8 0xA8 0xEE
+: oldD  0xC0 0xA0 0xA0 0xC0
+
+: drawoldlabel
+	i := oldOL
+	sprite va v1 4
+
+	va += 8
+	i := oldD
+	sprite va v1 4
+;
+
+: yeroutY	0x42 0x42 0x66 0x3E 0x0C 0x18 0x30 0x60
+: yeroutE	0x38 0x7C 0x40 0x70 0x40 0x40 0x7C 0x3C
+: yeroutR	0x38 0x6C 0x64 0x64 0x7C 0x68 0x6C 0x66
+: yeroutO	0x3C 0x66 0x42 0x42 0x42 0x66 0x7E 0x3C
+: yeroutU	0x62 0x62 0x62 0x62 0x62 0x66 0x7E 0x3C
+: yeroutT	0x3C 0x7E 0x18 0x18 0x18 0x18 0x18 0x18
+: yeroutEx  0x30 0x30 0x30 0x60 0x60 0x00 0xC0 0xC0
+
+: drawgameovertitle
+	i := yeroutY
+	sprite va v1 8
+
+	va += 7
+	i := yeroutE
+	sprite va v1 8
+
+	va += 7
+	i := yeroutR
+	sprite va v1 8
+
+	va += 10
+	i := yeroutO
+	sprite va v1 8
+
+	va += 7
+	i := yeroutU
+	sprite va v1 8
+
+	va += 7
+	i := yeroutT
+	sprite va v1 8
+
+	va += 7
+	i := yeroutEx
+	sprite va v1 8
 ;
