@@ -30,11 +30,13 @@
 :const STATE_WAIT_PITCH		1  # Waiting to pitch the ball
 :const STATE_WINDUP			2  # Winding up before pitch
 :const STATE_WAIT_SWING		3  # Ball pitched, waiting for swing
-:const STATE_STRIKE			4  # Swung and missed
-:const STATE_HIT			5  # Ball in play after being hit
-:const STATE_SCORE			6
-:const STATE_OUT			7
-:const STATE_GAME_OVER		8
+:const STATE_STRIKE			5  # Swung and missed
+:const STATE_CALL_STRIKE	4  # Strike no swing
+:const STATE_HIT			6  # Ball in play after being hit
+:const STATE_SCORE			7
+:const STATE_OUT			8
+:const STATE_CALL_OUT		9
+:const STATE_GAME_OVER		10
 
 :const MASK_GAMESTATE		0b00001111
 :const MASK_PLAYER_TURN		0b10000000
@@ -54,6 +56,9 @@
 :const TOP_HR_X		32	# horizontal position of the home run area
 
 :const MAX_OUTS		9
+
+:const CALLED_BALL		2
+:const CALLED_STRIKE 	3
 
 :alias ballx 		v7	# x pos of the ball
 :alias bally		v8  # y pos of the ball
@@ -87,9 +92,11 @@
 		if v0 == STATE_WINDUP		then	windup-state
 		if v0 == STATE_WAIT_SWING	then	wait-for-swing
 		if v0 == STATE_STRIKE		then 	strike-state
+		if v0 == STATE_CALL_STRIKE	then 	strike-state
 		if v0 == STATE_HIT			then 	hit-state
 		if v0 == STATE_SCORE		then 	home-run-state
 		if v0 == STATE_OUT			then 	out-state
+		if v0 == STATE_CALL_OUT		then 	out-state
 		if v0 == STATE_GAME_OVER	then 	state-game-over
 	again
 ;
@@ -215,6 +222,8 @@
 	if v0 == STATE_WAIT_PITCH 	then jump setbatterset 
 	if v0 == STATE_WINDUP 		then jump setbatterset
 	if v0 == STATE_WAIT_SWING 	then jump setbatterset
+	if v0 == STATE_CALL_STRIKE  then jump setbatterset
+	if v0 == STATE_CALL_OUT  	then jump setbatterset
 	setbatterswing
 ;
 
@@ -424,9 +433,12 @@
 	v0 := 0b11000000
 	v1 := ballx
 	v1 &= v0
-	if v1 != 0 then jump reset-swing
+	if v1 != 0 begin
+		if ve == CALLED_STRIKE then jump goto-watched-strike
+		jump reset-swing
+	end 
 
-	# hit the ground
+	# hit the ground, always a ball (?)
 	v0 := 0b11100000
 	v1 := bally
 	v1 &= v0
@@ -498,10 +510,23 @@
 	strike-state
 ;
 
+# goto the strike state
+: goto-watched-strike
+	getgamestate
+	if v0 != STATE_CALL_STRIKE begin 
+		drawstrike
+        
+		v2 := STATE_CALL_STRIKE
+		swing
+	end
+
+	strike-state
+;
+
 # wait for key press to exit strike state
 : strike-state
-	getgamestate
-	if v0 != STATE_STRIKE then return
+	#getgamestate
+	#if v0 != STATE_STRIKE then return
 
 	v0 := 0b11000000
 	v1 := ballx
@@ -633,6 +658,14 @@
 	bally := v0
 
 	drawball
+
+	# set ve to where ball was in strike zone: 1 strike, 2 ball
+	if ballx == HITX begin
+		v0 := CALLED_STRIKE
+		if bally <= HIGH_Y then v0 := CALLED_BALL
+		if bally >= LOW_Y then v0 := CALLED_BALL
+		ve := v0
+	end
 ;
 
 # step the ball after being hit
@@ -691,7 +724,9 @@
 : goto-out
 	add-to-outs
 
-	gamestate := STATE_OUT
+	getgamestate
+	if v0 == STATE_CALL_STRIKE then gamestate := STATE_CALL_OUT
+	if v0 != STATE_CALL_STRIKE then gamestate := STATE_OUT
 	out-state
 ;
 
