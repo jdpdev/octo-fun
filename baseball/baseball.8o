@@ -53,6 +53,8 @@
 :const LEFT_HR_Y	10	# vertical position of home run area
 :const TOP_HR_X		32	# horizontal position of the home run area
 
+:const MAX_OUTS		9
+
 :alias ballx 		v7	# x pos of the ball
 :alias bally		v8  # y pos of the ball
 :alias ballxfrac	v9  # x fractional position
@@ -120,7 +122,7 @@
 	saveflags v3
 
 	va := 7
-	v1 := 4
+	vb := 4
 	drawgameovertitle
 
 	v0 := key
@@ -135,7 +137,7 @@
 	drawnewbest
 
 	va := 38
-	v1 += 6
+	vb += 6
 	draw-high-score
 
 	va := 10
@@ -156,7 +158,7 @@
 	drawoldlabel
 
 	va := 38
-	v1 += 6
+	vb := 24
 	draw-high-score
 
 	va := 10
@@ -170,15 +172,15 @@
 	load v2
 
 	i := hex v0
-	sprite va v1 5
+	sprite va vb 5
 
 	va += 5
 	i := hex v1
-	sprite va v1 5
+	sprite va vb 5
 
 	va += 5
 	i := hex v2
-	sprite va v1 5
+	sprite va vb 5
 ;
 
 : start-gameworld
@@ -687,6 +689,9 @@
 	drawoutlabel
 
 	v0 := key
+
+	if outs > MAX_OUTS then jump state-game-over
+
 	drawoutlabel
 	reset-swing
 ;
@@ -746,10 +751,9 @@
 	drawouts
 	outs += 1
 
-	if outs == 9 then jump state-game-over
-
-    v0 := MASK_OUTS
+	v0 := MASK_OUTS
     outs &= v0
+
 	drawouts
 ;
 
@@ -1076,15 +1080,23 @@
 ;
 
 : gt 0xC0 0x20 0x10 0x20 0xC0
+
 : oldOL 0xE8 0xA8 0xA8 0xEE
 : oldD  0xC0 0xA0 0xA0 0xC0
+: scoreSC 0xEE 0x88 0x68 0xEE
+: scoreOR 0xEE 0xAE 0xAC 0xEA
+: scoreE  0xE0 0xC0 0x80 0xE0
 
 : drawoldlabel
-	i := oldOL
+	i := scoreSC
 	sprite va v1 4
 
 	va += 8
-	i := oldD
+	i := scoreOR
+	sprite va v1 4
+
+	va += 8
+	i := scoreE
 	sprite va v1 4
 ;
 
@@ -1098,29 +1110,29 @@
 
 : drawgameovertitle
 	i := yeroutY
-	sprite va v1 8
+	sprite va vb 8
 
 	va += 7
 	i := yeroutE
-	sprite va v1 8
+	sprite va vb 8
 
 	va += 7
 	i := yeroutR
-	sprite va v1 8
+	sprite va vb 8
 
 	va += 10
 	i := yeroutO
-	sprite va v1 8
+	sprite va vb 8
 
 	va += 7
 	i := yeroutU
-	sprite va v1 8
+	sprite va vb 8
 
 	va += 7
 	i := yeroutT
-	sprite va v1 8
+	sprite va vb 8
 
 	va += 7
 	i := yeroutEx
-	sprite va v1 8
+	sprite va vb 8
 ;
