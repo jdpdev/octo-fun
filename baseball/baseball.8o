@@ -53,7 +53,7 @@
 :const LEFT_HR_Y	10	# vertical position of home run area
 :const TOP_HR_X		32	# horizontal position of the home run area
 
-:const MAX_OUTS		10
+:const MAX_OUTS		9
 
 :alias ballx 		v7	# x pos of the ball
 :alias bally		v8  # y pos of the ball
@@ -420,15 +420,17 @@
 	# move ball
 	move-ball-pitch
 
-	if ballx >= 63 begin
-		reset-swing
-		return
-	end
+	# hit the right edge
+	v0 := 0b11000000
+	v1 := ballx
+	v1 &= v0
+	if v1 != 0 then jump reset-swing
 
-	if bally >= 32 begin
-		reset-swing
-		return
-	end
+	# hit the ground
+	v0 := 0b11100000
+	v1 := bally
+	v1 &= v0
+	if v1 != 0 then jump reset-swing
 ;
 
 # check if the player has swung and calculate the result
@@ -501,7 +503,10 @@
 	getgamestate
 	if v0 != STATE_STRIKE then return
 
-	if ballx < 63 then jump move-ball-pitch
+	v0 := 0b11000000
+	v1 := ballx
+	v1 &= v0
+	if v1 == 0 then jump move-ball-pitch
 
     add-to-strikes
 
@@ -593,7 +598,7 @@
 	if v0 == STATE_HIT then return
 
 	v3 := ballx
-	ve := bally
+	v0 := bally
 
 	drawball
 
@@ -616,16 +621,16 @@
 	v2 &= ballvy
 	if v2 == 0 begin	# numbers >=128 are negative
 		ballyfrac += v1
-		ve += vf
+		v0 += vf
 	else
 		v2 := 255
 		v1 =- v2
 		ballyfrac += v1
-		ve -= vf
+		v0 -= vf
 	end
 
 	ballx := v3
-	bally := ve
+	bally := v0
 
 	drawball
 ;
