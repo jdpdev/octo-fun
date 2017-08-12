@@ -1,7 +1,7 @@
 # ################################################################################
 #	HOME RUN DERBY 
 #		Hit as many home runs as you can before you run out of outs.
-#		(100 cycles/frame recommended)
+#		(200 cycles/frame recommended)
 #	
 #	* Pitcher Controls
 #		Fastball: 	1 high, Q mid, A low
@@ -46,7 +46,7 @@
 :const GROUND_Y		23	# y position to draw player sprites at
 :const BALL_Y		25	# y position to spawn ball at on pitch
 
-:const HITX			55	# x position of where ball is to ideally hit it
+:const HITX			57	# x position of where ball is to ideally hit it
 :const SWEET_SPOT	2	# distance from HITX where hit is valid
 
 :const HIGH_Y		26	# y position of the high bound of the strike zone
@@ -349,65 +349,65 @@
 
 	# high fastball
 	if windup-pitch == 1 begin			
-		ballvx := 255
-		ballvy := -20
-		ballgravity := 1
+		ballvx := 160
+		ballvy := -5
+		ballgravity := 0
 	end
 
 	# med fastball
 	if windup-pitch == 4 begin			
-		ballvx := 255
-		ballvy := -5
-		ballgravity := 1
+		ballvx := 160
+		ballvy := 8
+		ballgravity := 0
 	end
 
 	# low fastball
 	if windup-pitch == 7 begin			
-		ballvx := 255
-		ballvy := 5
-		ballgravity := 1
+		ballvx := 160
+		ballvy := 18
+		ballgravity := 0
 	end
 
 	# high changeup
 	if windup-pitch == 2 begin			
-		ballvx := 200
-		ballvy := -70
-		ballgravity := 2
+		ballvx := 130
+		ballvy := -50
+		ballgravity := 1
 	end
 
 	# med changeup
 	if windup-pitch == 5 begin			
-		ballvx := 200
-		ballvy := -55
-		ballgravity := 2
+		ballvx := 115
+		ballvy := -50
+		ballgravity := 1
 	end
 
 	# low changeup
 	if windup-pitch == 8 begin			
-		ballvx := 190
-		ballvy := -10
+		ballvx := 115
+		ballvy := -45
 		ballgravity := 1
 	end
 
 	# high curve
 	if windup-pitch == 3 begin			
-		ballvx := 190
+		ballvx := 115
 		ballvy := -110
-		ballgravity := 3
+		ballgravity := 2
 	end
 
 	# med curve
 	if windup-pitch == 6 begin			
-		ballvx := 200
-		ballvy := -90
-		ballgravity := 3
+		ballvx := 115
+		ballvy := -100
+		ballgravity := 2
 	end
 
 	# low curve
 	if windup-pitch == 9 begin			
-		ballvx := 220
-		ballvy := -80
-		ballgravity := 3
+		ballvx := 115
+		ballvy := -45
+		ballgravity := 1
 	end
 
 	# wait for swing
@@ -442,7 +442,10 @@
 	v0 := 0b11100000
 	v1 := bally
 	v1 &= v0
-	if v1 != 0 then jump reset-swing
+	if v1 != 0 begin
+		if ve == CALLED_STRIKE then jump goto-watched-strike
+		jump reset-swing
+	end
 ;
 
 # check if the player has swung and calculate the result
