@@ -53,7 +53,7 @@
 :const LEFT_HR_Y	10	# vertical position of home run area
 :const TOP_HR_X		32	# horizontal position of the home run area
 
-:const MAX_OUTS		9
+:const MAX_OUTS		10
 
 :alias ballx 		v7	# x pos of the ball
 :alias bally		v8  # y pos of the ball
@@ -506,7 +506,12 @@
     add-to-strikes
 
 	v0 := key
+
 	drawstrike
+
+	getstrikes
+	if v0 == 3 then jump goto-out
+
     reset-swing
 ;
 
@@ -690,7 +695,7 @@
 
 	v0 := key
 
-	if outs > MAX_OUTS then jump state-game-over
+	if outs == MAX_OUTS then jump state-game-over
 
 	drawoutlabel
 	reset-swing
@@ -759,7 +764,7 @@
 
 : add-to-strikes
     getstrikes
-    if v0 == 2 then jump add-to-outs
+    #if v0 == 2 then jump add-to-outs
 
     drawouts
     v0 := 0b10000
