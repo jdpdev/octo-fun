@@ -538,7 +538,10 @@
 
     add-to-strikes
 
-	v0 := key
+    loop
+		v0 := key
+		while v0 != 0xA
+	again
 
 	drawstrike
 
@@ -554,14 +557,14 @@
 : goto-good-hit
     if v2 == 0 begin
         if v1 == 0 begin
-            ballvx := 100
+            ballvx := 110
             ballvy := 60
         else
             ballvx := 120
             ballvy := 50
         end
     else
-        ballvx := 80
+        ballvx := 90
         ballvy := 80
     end
 	
@@ -736,7 +739,10 @@
 : out-state
 	drawoutlabel
 
-	v0 := key
+	loop
+		v0 := key
+		while v0 != 0xA
+	again
 
 	if outs == MAX_OUTS then jump state-game-over
 
@@ -755,7 +761,11 @@
 : home-run-state
 	drawbooya
 
-	v0 := key
+	loop
+		v0 := key
+		while v0 != 0xA
+	again
+	
 	drawbooya
 	reset-swing
 ;
