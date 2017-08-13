@@ -558,16 +558,16 @@
 	if v2 == 0 begin
 		#:breakpoint goto-good-hit
         if v1 == 0 begin
-            ballvx := 110
-            ballvy := 60
+            ballvx := 65
+            ballvy := 30
             hit-sound
         else
-            ballvx := 120
-            ballvy := 50
+            ballvx := 60
+            ballvy := 25
         end
     else
-        ballvx := 90
-        ballvy := 80
+        ballvx := 45
+        ballvy := 30
     end
 	
     ballgravity := 1
@@ -642,8 +642,6 @@
 	v3 := ballx
 	v0 := bally
 
-	drawball
-
 	# move forward
 	v1 := ballvx
 	ballxfrac += v1
@@ -671,10 +669,16 @@
 		v0 -= vf
 	end
 
-	ballx := v3
-	bally := v0
+	v1 := 0
+	if ballx != v3 then v1 := 1
+	if bally != v0 then v1 := 1
 
-	drawball
+	if v1 == 1 begin
+		drawball
+		ballx := v3
+		bally := v0
+		drawball
+	end
 
 	# set ve to where ball was in strike zone: 1 strike, 2 ball
 	if ballx == HITX begin
