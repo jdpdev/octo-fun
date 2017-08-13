@@ -46,7 +46,7 @@
 :const GROUND_Y		23	# y position to draw player sprites at
 :const BALL_Y		25	# y position to spawn ball at on pitch
 
-:const HITX			57	# x position of where ball is to ideally hit it
+:const HITX			56	# x position of where ball is to ideally hit it
 :const SWEET_SPOT	2	# distance from HITX where hit is valid
 
 :const HIGH_Y		26	# y position of the high bound of the strike zone
@@ -60,28 +60,28 @@
 :const CALLED_BALL		2
 :const CALLED_STRIKE 	3
 
+:alias gamestate 	v4	# first bit is which team is batting, other bits are game state
+
+:alias outs			v5	# high 4 digits are strikes, low 4 are outs
+:alias score		v6	# current score
+
 :alias ballx 		v7	# x pos of the ball
 :alias bally		v8  # y pos of the ball
 :alias ballxfrac	v9  # x fractional position
 :alias ballyfrac	va  # y fractional position
 
-# velocity is in fractional units/sec (1px = 255)
+# velocity is in fractional units/tick (1px = 255)
 :alias ballvx  		vb  # x speed
 :alias ballvy  		vc  # y speed
 :alias ballgravity	vd  # acceleration on the ball while being pitched
 						# OR direction of y speed after being hit
 
-# The selected pitch before being thrown
 # ve is overwritten by comparison operators, so it has limited useful scope
-:alias windup-pitch ve
-
-:alias gamestate 	v4	# first bit is which team is batting, other bits are game state
-
-:alias outs			v5	# number of outs
-:alias score		v6	# current score
+:alias windup-pitch ve  # The selected pitch before being thrown
+:alias called-pitch ve  # whether pitch was ball or strike at HITX
 
 : main
-	#score := 9
+	#score := 15
 	#gamestate := STATE_GAME_OVER
 
 	loop
@@ -144,7 +144,7 @@
 	drawnewbest
 
 	va := 38
-	vb += 6
+	vb := 24
 	draw-high-score
 
 	va := 10
@@ -434,7 +434,7 @@
 	v1 := ballx
 	v1 &= v0
 	if v1 != 0 begin
-		if ve == CALLED_STRIKE then jump goto-watched-strike
+		if called-pitch == CALLED_STRIKE then jump goto-watched-strike
 		jump reset-swing
 	end 
 
@@ -443,7 +443,7 @@
 	v1 := bally
 	v1 &= v0
 	if v1 != 0 begin
-		if ve == CALLED_STRIKE then jump goto-watched-strike
+		if called-pitch == CALLED_STRIKE then jump goto-watched-strike
 		jump reset-swing
 	end
 ;
@@ -555,10 +555,12 @@
 #   v1 is the distance from the sweet spot
 #   v2 is the sign of the sweet spot (0x00 ahead 0xff behind)
 : goto-good-hit
-    if v2 == 0 begin
+	if v2 == 0 begin
+		#:breakpoint goto-good-hit
         if v1 == 0 begin
             ballvx := 110
             ballvy := 60
+            hit-sound
         else
             ballvx := 120
             ballvy := 50
@@ -578,7 +580,6 @@
 	v2 := STATE_HIT
 	swing
 
-	#:breakpoint goto-grounder
 	ballvx := 160
 	ballvy := 50
 	ballgravity := 2
@@ -586,13 +587,23 @@
 
 # process a popup hit
 : goto-popup
-	#:breakpoint goto-popup
 	v2 := STATE_HIT
 	swing
 
 	ballvx := 10
 	ballvy := 100
 	ballgravity := 1
+;
+
+: hit-sound
+	#v0 := 10
+	#delay  := v0
+	#vf     := 10
+	buzzer := vf
+	#loop
+	#	vf := delay
+	#	if vf != 0 then
+	#again
 ;
 
 # move batter to swing state
@@ -670,7 +681,7 @@
 		v0 := CALLED_STRIKE
 		if bally <= HIGH_Y then v0 := CALLED_BALL
 		if bally >= LOW_Y then v0 := CALLED_BALL
-		ve := v0
+		called-pitch := v0
 	end
 ;
 
@@ -765,7 +776,7 @@
 		v0 := key
 		while v0 != 0xA
 	again
-	
+
 	drawbooya
 	reset-swing
 ;
