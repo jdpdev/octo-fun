@@ -1,0 +1,221 @@
+# Structure for individual notes
+:alias type			v7	# type of note
+:alias input		v8	# key code note looks for
+:alias px			v9	# x position of the note
+:alias py 			va	# y position of the note (lane, not actual position)
+:alias charge 		vb	# charge granted by the note
+#:alias ???			vc 
+#:alias ???			vd 
+#:alias ???			ve 
+
+# World state
+:alias state 		v4
+:alias pc-charge	v5
+:alias npc-charge	v6
+
+:alias x v0
+:alias y v1
+
+: main
+	hires
+
+	draw-ground
+	setup-player
+
+	# example note
+	type := 1
+	input := 0x7
+	px := 0
+	py := 0
+	charge := 10
+	spawn-note
+
+	loop
+		loop-notes
+	again
+;
+
+: setup-player
+	draw-player
+;
+
+: update-player
+	
+;
+
+# loop through notes and call update on each
+: loop-notes
+	v0 := 0
+
+	loop
+		update-note
+		v0 += 1
+		while v0 != 10
+	again
+;
+
+# draw and update an individual note
+# this loads the note in memory, based on index counter v0 set by :loop-notes
+: update-note
+	v1 := v0
+	v1 <<= v1
+	v1 <<= v1
+	v1 <<= v1
+
+	i := notes
+	i += v1
+
+	load type - charge
+
+	if type == 0 then return
+
+	draw-note
+	step-note
+	draw-note
+;
+
+# draws the note loaded into memory
+: draw-note
+	if type == 0 then return
+
+	note-factory
+
+	# lane
+	if py == 0 then v2 := 2
+	if py == 1 then v2 := 12
+	if py == 2 then v2 := 22
+
+	plane 2
+	sprite px v2 8
+;
+
+# step the note loaded into memory
+: step-note
+
+	# kill when off-screen
+	if px >= 125 then type := 0
+
+	px += 3
+	i := notes
+	i += v1
+	save type - charge
+;
+
+# sets i to the sprite associated with the current note
+: note-factory
+	if type == 1 begin
+		if input == 0x7 then i := note-simple-a
+		if input == 0x8 then i := note-simple-s
+		if input == 0x9 then i := note-simple-d
+	end
+;
+
+# saves a new note to the first empty note slot
+# the data of the note should already be populated to the registers
+: spawn-note
+	draw-note
+
+	# find empty memory
+	i := notes
+
+	loop
+		load v1 - v1
+
+		v0 := 8
+		if v1 != 0 then i += v0
+		while v1 != 0
+	again
+
+	save type - charge
+;
+
+## DRAW ROUTINES #############################################################
+
+: draw-ground
+	vc := 0
+	vd := 49
+	i := ground
+
+	loop
+		plane 1
+		sprite vc vd 15
+		plane 2
+		sprite vc vd 15
+		
+		vc += 8
+		while vc != 128
+	again
+;
+
+: draw-player
+	x := 100
+	y := 33
+
+	plane 1
+	i := hors
+	sprite x y 0
+
+	i := mans
+	x += 7
+	plane 2
+	sprite x y 12
+
+	plane 1
+	i := hats
+	sprite x y 1
+
+	i := lance
+	x := -37
+	y += 5
+	plane 1
+	sprite x y 0
+	plane 2
+	sprite x y 0
+	
+;
+
+## SPRITES ###################################################################
+: mans
+0x60 0xC0 0xC0 0x40 0x60 0xE0 0xE0 0x60 
+0x40 0x40 0x40 0x40
+
+: hats
+0x60
+
+: lance
+0x00 0x07 0xFF 0xFF 0x00 0x00 0x00 0x00 
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
+
+: hors
+0x00 0x00 0x60 0x00 0xF0 0x00 0xF0 0x00 
+0xF8 0x00 0xD8 0x00 0x1C 0x00 0x1F 0x1C 
+0x3F 0x7C 0x3F 0x7C 0x3F 0x7C 0x27 0x1C 
+0x24 0x1C 0x24 0x14 0x24 0x14 0x24 0x14    
+
+: ground
+0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 
+0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
+
+: gate
+0xFF 0xFF 0x11 0x11 0x11 0x11 0x11 0xFF
+
+: note-simple-a	0x7E 0xE7 0xDB 0xC3 0xDB 0xDB 0xFF 0x7E
+: note-simple-s 0x7E 0xE3 0xDF 0xC3 0xFB 0xC7 0xFF 0x7E
+: note-simple-d 0x7E 0xC7 0xDB 0xDB 0xDB 0xC7 0xFF 0x7E
+
+## MEMORY ####################################################################
+
+# allocate in blocks of eight for easy multiplication
+: notes
+	0 0x0 0 0 0 0 0 0
+	0 0x0 0 0 0 0 0 0
+	0 0x0 0 0 0 0 0 0
+	0 0x0 0 0 0 0 0 0
+	0 0x0 0 0 0 0 0 0
+	0 0x0 0 0 0 0 0 0
+	0 0x0 0 0 0 0 0 0
+	0 0x0 0 0 0 0 0 0
+	0 0x0 0 0 0 0 0 0
+	0 0x0 0 0 0 0 0 0
