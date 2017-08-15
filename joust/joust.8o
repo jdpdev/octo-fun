@@ -13,8 +13,18 @@
 :alias pc-charge	v5
 :alias npc-charge	v6
 
-:alias x v0
-:alias y v1
+:alias j v0
+:alias x v1
+:alias y v2
+
+:const PC_PLANE		2
+:const NPC_PLANE	1 
+:const KILL_NOTE	127
+
+:const DRAW_HIT_SPOT_MIN	105
+:const DRAW_HIT_SPOT_MAX 	110
+:const HIT_SPOT_MIN 		98
+:const HIT_SPOT_MAX 		110
 
 : main
 	hires
@@ -22,16 +32,29 @@
 	draw-ground
 	setup-player
 
-	# example note
+	npc-charge := 1
+	pc-charge := 2
+	draw-npc-charge
+	draw-pc-charge
+
+	# example notes
 	type := 1
 	input := 0x7
-	px := 0
+	px := 40
 	py := 0
+	charge := 10
+	spawn-note
+
+	type := 2
+	input := 0x8
+	px := 10
+	py := 1
 	charge := 10
 	spawn-note
 
 	loop
 		loop-notes
+		read-input
 	again
 ;
 
@@ -39,8 +62,81 @@
 	draw-player
 ;
 
-: update-player
+: read-input
+	v0 := 0x7
+	if v0 key then jump process-input
 	
+	v0 := 0x8
+	if v0 key then jump process-input
+
+	v0 := 0x9
+	if v0 key then jump process-input
+;
+
+# if input made, go through notes to see if there is one in sweet spot,
+# and determine if input is correct for it
+: process-input
+	i := notes
+	v2 := 0
+	v3 := 8
+
+	loop
+		load-note
+
+		if type != 0 begin
+			can-hit-note
+
+			if v1 == 1 then jump hit-note
+		end
+
+		i += v3
+		v2 += 1
+		while v2 != 10
+	again
+;
+
+# process result of hitting the current note
+# v0 is the key that was hit
+: hit-note
+	if type == NPC_PLANE 	then jump process-bad-hit
+	if input != v0 			then jump process-bad-hit
+
+	process-good-hit
+;
+
+# process hitting the note correctly
+: process-good-hit
+	v3 := v2
+	add-pc-charge
+	remove-note
+;
+
+# process hitting the note poorly
+: process-bad-hit
+	v3 := v2
+	add-npc-charge
+	remove-note
+;
+
+: remove-note
+	draw-note
+
+	type := 0
+
+	v3 <<= v3
+	v3 <<= v3
+	v3 <<= v3
+
+	i := notes
+	i += v3
+	save type - charge
+;
+
+# determines if the current note is in the hit zone, and saves result to v1
+: can-hit-note
+	v1 := 1
+	if px < HIT_SPOT_MIN then v1 := 0
+	if px > HIT_SPOT_MAX then v1 := 0
 ;
 
 # loop through notes and call update on each
@@ -58,20 +154,46 @@
 # this loads the note in memory, based on index counter v0 set by :loop-notes
 : update-note
 	v1 := v0
-	v1 <<= v1
-	v1 <<= v1
-	v1 <<= v1
+	note-index-to-offset
 
 	i := notes
 	i += v1
 
-	load type - charge
+	load-note
 
 	if type == 0 then return
 
 	draw-note
 	step-note
 	draw-note
+;
+
+: note-index-to-offset
+	v1 <<= v1
+	v1 <<= v1
+	v1 <<= v1
+;
+
+# loads the note at the current i position
+: load-note
+	load type - charge
+;
+
+# v1 is the memory offset of the current note
+: save-note
+	i := notes
+	i += v1
+	save type - charge
+;
+
+# step the note loaded into memory
+: step-note
+
+	# kill when off-screen
+	if px >= 125 then type := 0
+
+	px += 3
+	save-note
 ;
 
 # draws the note loaded into memory
@@ -85,25 +207,20 @@
 	if py == 1 then v2 := 12
 	if py == 2 then v2 := 22
 
-	plane 2
 	sprite px v2 8
-;
-
-# step the note loaded into memory
-: step-note
-
-	# kill when off-screen
-	if px >= 125 then type := 0
-
-	px += 3
-	i := notes
-	i += v1
-	save type - charge
 ;
 
 # sets i to the sprite associated with the current note
 : note-factory
 	if type == 1 begin
+		plane 1
+		if input == 0x7 then i := note-simple-a
+		if input == 0x8 then i := note-simple-s
+		if input == 0x9 then i := note-simple-d
+	end
+
+	if type == 2 begin
+		plane 2
 		if input == 0x7 then i := note-simple-a
 		if input == 0x8 then i := note-simple-s
 		if input == 0x9 then i := note-simple-d
@@ -129,6 +246,20 @@
 	save type - charge
 ;
 
+# add the charge of the current note to the pc charge
+: add-pc-charge
+	draw-pc-charge
+	pc-charge += charge
+	draw-pc-charge
+;
+
+# add the charge of the current note to the npc charge
+: add-npc-charge
+	draw-npc-charge
+	npc-charge += charge
+	draw-npc-charge
+;
+
 ## DRAW ROUTINES #############################################################
 
 : draw-ground
@@ -138,13 +269,25 @@
 
 	loop
 		plane 1
-		sprite vc vd 15
+		sprite vc vd 13
 		plane 2
-		sprite vc vd 15
+		sprite vc vd 13
 		
 		vc += 8
 		while vc != 128
 	again
+
+	i := fill-bar
+
+	vc := DRAW_HIT_SPOT_MIN
+	vd := 0
+	plane 1
+	sprite vc vd 2
+
+	vc := DRAW_HIT_SPOT_MAX
+	plane 2
+	sprite vc vd 2
+
 ;
 
 : draw-player
@@ -170,8 +313,38 @@
 	plane 1
 	sprite x y 0
 	plane 2
-	sprite x y 0
-	
+	sprite x y 0	
+;
+
+: draw-npc-charge
+	x := 0
+	y := 62
+	j := 0
+
+	plane NPC_PLANE
+	i := fill-bar
+
+	loop
+		sprite x y 2
+		x += 1
+		while x != npc-charge
+	again
+;
+
+: draw-pc-charge
+	x := 127
+	y := 62
+	j := 0
+
+	plane PC_PLANE
+	i := fill-bar
+
+	loop
+		sprite x y 2
+		x += -1
+		j += 1
+		while j != pc-charge
+	again
 ;
 
 ## SPRITES ###################################################################
@@ -196,10 +369,12 @@
 
 : ground
 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 
-0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
+0xFF 0xFF 0xFF 0xFF 0xFF
 
 : gate
 0xFF 0xFF 0x11 0x11 0x11 0x11 0x11 0xFF
+
+: fill-bar 0x80 0x80
 
 : note-simple-a	0x7E 0xE7 0xDB 0xC3 0xDB 0xDB 0xFF 0x7E
 : note-simple-s 0x7E 0xE3 0xDF 0xC3 0xFB 0xC7 0xFF 0x7E
