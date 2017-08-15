@@ -35,10 +35,8 @@
 	draw-ground
 	setup-player
 
-	npc-charge := 1
-	pc-charge := 2
-	draw-npc-charge
-	draw-pc-charge
+	npc-charge := 0
+	pc-charge := 0
 
 	loop
 		loop-notes
@@ -86,6 +84,9 @@
 	if v0 key then jump process-input
 
 	v0 := 0x9
+	if v0 key then jump process-input
+
+	v0 := 0xA
 	if v0 key then jump process-input
 ;
 
@@ -272,14 +273,12 @@
 : add-pc-charge
 	draw-pc-charge
 	pc-charge += charge
-	draw-pc-charge
 ;
 
 # add the charge of the current note to the npc charge
 : add-npc-charge
 	draw-npc-charge
 	npc-charge += charge
-	draw-npc-charge
 ;
 
 ## DRAW ROUTINES #############################################################
@@ -339,9 +338,10 @@
 ;
 
 : draw-npc-charge
-	x := 0
+	x := npc-charge
 	y := 62
-	j := 0
+	j := x
+	j += charge
 
 	plane NPC_PLANE
 	i := fill-bar
@@ -349,23 +349,28 @@
 	loop
 		sprite x y 2
 		x += 1
-		while x != npc-charge
+		while x != j
 	again
 ;
 
 : draw-pc-charge
-	x := 127
+	:breakpoint draw-pc-charge
+	x := pc-charge
+	y := 255
+	x =- y
+	x += 1
+	j := x
+	x -= charge
 	y := 62
-	j := 0
+
 
 	plane PC_PLANE
 	i := fill-bar
 
 	loop
 		sprite x y 2
-		x += -1
-		j += 1
-		while j != pc-charge
+		x += 1
+		while x != j
 	again
 ;
 
