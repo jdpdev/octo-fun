@@ -13,12 +13,18 @@
 :alias pxr			va	# position of the right horse
 :alias ticker		vb
 
-# World state
+# Constant world state
 :alias state 		v4
 :alias pc-charge	v5
 :alias npc-charge	v6
+
+# taptap world state
 :alias spawn-timer	v7
 :alias next-spawn	v8
+
+# charge world state
+:alias fall-ticks	v7	# ticks since the collision
+:alias fall-step	v8	# step of the fall
 
 :alias j v0
 :alias x v1
@@ -27,6 +33,8 @@
 :const STATE_TITLE		0
 :const STATE_TAPTAP		1
 :const STATE_CHARGE		2
+:const STATE_NPC_LOSE	3
+:const STATE_PC_LOSE 	4
 
 :const PC_PLANE		2
 :const NPC_PLANE	1
@@ -36,8 +44,9 @@
 :const HIT_SPOT_MIN 		98
 :const HIT_SPOT_MAX 		110
 
-:const PLAYER_X				100
+:const PLAYER_X				96
 :const CHARACTER_Y			33
+:const JOUST_X				48	# x position of npc at the collision point
 
 : main
 	hires
@@ -46,6 +55,8 @@
 	loop
 		if state == STATE_TAPTAP	then game-loop
 		if state == STATE_CHARGE	then charge-state
+		if state == STATE_NPC_LOSE	then charge-state
+		if state == STATE_PC_LOSE	then charge-state
 	again
 ;
 
@@ -56,8 +67,11 @@
 	draw-ground
 	setup-player
 
-	#npc-charge := 125
-	#pc-charge := 126
+	npc-charge := 100
+	pc-charge := 155
+
+	state := STATE_CHARGE
+	return
 
 	loop
 		if state != STATE_TAPTAP then jump exit-taptap
@@ -382,14 +396,25 @@
 
 : charge-loop
 	draw-npc
+	if pxl > 15 then draw-player
+
+	if pxl == JOUST_X then resolve-hit
+
+	# track ticks since the collision for animation purposes
+	if state != STATE_CHARGE then fall-step += 1
+
 	pxl += 3
 	draw-npc
 
 	if pxl <= 18 then return
 
-	draw-player
 	pxr += -3
 	draw-player
+;
+
+: resolve-hit
+	if pc-charge >= npc-charge then state := STATE_NPC_LOSE
+	if pc-charge < npc-charge then state := STATE_PC_LOSE
 ;
 
 ## DRAW ROUTINES #############################################################
@@ -441,7 +466,7 @@
 : draw-player
 	# X depends on the state
 	if state == STATE_TAPTAP then x := PLAYER_X
-	if state == STATE_CHARGE then x := pxr
+	if state >= STATE_CHARGE then x := pxr
 
 	y := CHARACTER_Y
 
@@ -475,14 +500,22 @@
 	i := hors-reverse
 	sprite x y 0
 
+	draw-npc-knight
+;
+
+: draw-npc-knight
+	if state == STATE_TAPTAP then jump draw-npc-knight-mounted
+	if state == STATE_CHARGE then jump draw-npc-knight-mounted
+	if state == STATE_PC_LOSE then jump draw-npc-knight-mounted
+
+	draw-npc-knight-dismounted
+;
+
+: draw-npc-knight-mounted
 	i := mans-reverse
 	x += 5
 	plane 1
 	sprite x y 12
-
-	#plane 2
-	#i := hats
-	#sprite x y 1
 
 	i := lance-reverse
 	x += 4
@@ -491,6 +524,20 @@
 	sprite x y 0
 	plane 2
 	sprite x y 0
+;
+
+: draw-npc-knight-dismounted
+	i := mans-reverse
+	plane 1
+
+	# initial start position
+	x := JOUST_X
+	y := CHARACTER_Y
+
+	#x -= fall-step
+	#y += fall-step
+
+	sprite x y 12
 ;
 
 : draw-npc-charge-meter
