@@ -60,20 +60,25 @@
 	type := random 1
 	type += 1
 
-	#:breakpoint generate-new-note 
-	input := random 3
-	input += 0x7
+	v0 := random 3
+	if v0 == 0 then input := 0x7
+	if v0 == 1 then input := 0x8
+	if v0 == 2 then input := 0x9
+	if v0 == 3 then input := 0xE
 
 	px := 0
 	py := random 1
 
-	charge := 10
+	charge := 5
 
 	spawn-note
 
 	spawn-timer := 0
 	next-spawn := random 8
 	next-spawn += 10
+
+	charge := 1
+	add-npc-charge
 ;
 
 : read-input
@@ -86,7 +91,7 @@
 	v0 := 0x9
 	if v0 key then jump process-input
 
-	v0 := 0xA
+	v0 := 0xE
 	if v0 key then jump process-input
 ;
 
@@ -115,8 +120,11 @@
 # process result of hitting the current note
 # v0 is the key that was hit
 : hit-note
-	if type == NPC_PLANE 	then jump process-bad-hit
-	if input != v0 			then jump process-bad-hit
+	v1 := type
+	v1 += -1
+
+	if v1 != py 		then jump process-bad-hit
+	if input != v0 		then jump process-bad-hit
 
 	process-good-hit
 ;
@@ -133,6 +141,9 @@
 	v3 := v2
 	add-npc-charge
 	remove-note
+
+	v0 := 10
+	buzzer := v0
 ;
 
 : remove-note
@@ -236,7 +247,7 @@
 		if input == 0x7 then i := note-simple-a
 		if input == 0x8 then i := note-simple-s
 		if input == 0x9 then i := note-simple-d
-		if input == 0xA then i := note-simple-f
+		if input == 0xE then i := note-simple-f
 	end
 
 	# player
@@ -246,7 +257,7 @@
 		if input == 0x7 then i := note-simple-a
 		if input == 0x8 then i := note-simple-s
 		if input == 0x9 then i := note-simple-d
-		if input == 0xA then i := note-simple-f
+		if input == 0xE then i := note-simple-f
 	end
 ;
 
@@ -298,16 +309,32 @@
 		while vc != 128
 	again
 
-	i := fill-bar
+	i := hit-zone
 
 	vc := DRAW_HIT_SPOT_MIN
-	vd := 0
+	vd := 1
 	plane 1
-	sprite vc vd 2
+	sprite vc vd 10
 
-	vc := DRAW_HIT_SPOT_MAX
+	vc := DRAW_HIT_SPOT_MIN
+	vd := 11
 	plane 2
-	sprite vc vd 2
+	sprite vc vd 10
+
+	i := fill-bar
+	vc := 63
+	
+	vd := 61
+	plane 1
+	sprite vc vd 1
+	plane 2
+	sprite vc vd 1
+
+	vc += 1
+	plane 1
+	sprite vc vd 1
+	plane 2
+	sprite vc vd 1
 
 ;
 
@@ -354,7 +381,6 @@
 ;
 
 : draw-pc-charge
-	:breakpoint draw-pc-charge
 	x := pc-charge
 	y := 255
 	x =- y
@@ -402,6 +428,7 @@
 0xFF 0xFF 0x11 0x11 0x11 0x11 0x11 0xFF
 
 : fill-bar 0x80 0x80
+: hit-zone 0xF8 0xF8 0xF8 0xF8 0xF8 0xF8 0xF8 0xF8 0xF8 0xF8
 
 : note-simple-a	0x7E 0xE7 0xDB 0xC3 0xDB 0xDB 0xFF 0x7E
 : note-simple-s 0x7E 0xE3 0xDF 0xC3 0xFB 0xC7 0xFF 0x7E
