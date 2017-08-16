@@ -41,7 +41,7 @@
 
 : main
 	hires
-	state := 1
+	state := STATE_TAPTAP
 
 	loop
 		if state == STATE_TAPTAP	then game-loop
@@ -56,13 +56,12 @@
 	draw-ground
 	setup-player
 
-	npc-charge := 0
-	pc-charge := 0
-
-	state := STATE_CHARGE
-	return
+	#npc-charge := 125
+	#pc-charge := 126
 
 	loop
+		if state != STATE_TAPTAP then jump exit-taptap
+
 		loop-notes
 		read-input
 		note-factory
@@ -75,6 +74,7 @@
 
 # check whether to spawn a new note
 : note-factory
+	if state != STATE_TAPTAP then return
 	spawn-timer += 1
 	if spawn-timer == next-spawn then generate-new-note
 ;
@@ -107,6 +107,8 @@
 
 # look for keyboard input
 : read-input
+	if state != STATE_TAPTAP then return
+
 	v0 := 0x7
 	if v0 key then jump process-input
 	
@@ -171,7 +173,30 @@
 	buzzer := v0
 ;
 
+: exit-taptap
+	v2 := 0
+
+	loop
+		i := notes
+		v3 := v2
+		v3 <<= v3
+		v3 <<= v3
+		v3 <<= v3
+		i += v3
+
+		load-note
+
+		v3 := v2
+		remove-note
+
+		v2 += 1
+		while v2 != 10
+	again
+;
+
 : remove-note
+	if type == 0 then return
+
 	draw-note
 
 	type := 0
@@ -309,12 +334,28 @@
 : add-pc-charge
 	draw-pc-charge-meter
 	pc-charge += charge
+
+	check-charges
 ;
 
 # add the charge of the current note to the npc charge
 : add-npc-charge
 	draw-npc-charge-meter
 	npc-charge += charge
+
+	check-charges
+;
+
+# look for when the charges meet
+: check-charges
+	v0 := pc-charge
+	v0 += npc-charge
+
+	if vf == 1 then goto-charge
+;
+
+: goto-charge
+	state := STATE_CHARGE
 ;
 
 ## CHARGE LOOP ###############################################################
