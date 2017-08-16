@@ -8,6 +8,11 @@
 #:alias ???			vd 
 #:alias ???			ve 
 
+# Structure for charging
+:alias pxl			v9	# position of the left horse
+:alias pxr			va	# position of the right horse
+:alias ticker		vb
+
 # World state
 :alias state 		v4
 :alias pc-charge	v5
@@ -19,6 +24,10 @@
 :alias x v1
 :alias y v2
 
+:const STATE_TITLE		0
+:const STATE_TAPTAP		1
+:const STATE_CHARGE		2
+
 :const PC_PLANE		2
 :const NPC_PLANE	1
 
@@ -27,9 +36,21 @@
 :const HIT_SPOT_MIN 		98
 :const HIT_SPOT_MAX 		110
 
+:const PLAYER_X				100
+:const CHARACTER_Y			33
+
 : main
 	hires
+	state := 1
 
+	loop
+		if state == STATE_TAPTAP	then game-loop
+		if state == STATE_CHARGE	then charge-state
+	again
+;
+
+## GAME LOOP #################################################################
+: game-loop
 	next-spawn := 30
 
 	draw-ground
@@ -37,6 +58,9 @@
 
 	npc-charge := 0
 	pc-charge := 0
+
+	state := STATE_CHARGE
+	return
 
 	loop
 		loop-notes
@@ -81,6 +105,7 @@
 	add-npc-charge
 ;
 
+# look for keyboard input
 : read-input
 	v0 := 0x7
 	if v0 key then jump process-input
@@ -282,14 +307,48 @@
 
 # add the charge of the current note to the pc charge
 : add-pc-charge
-	draw-pc-charge
+	draw-pc-charge-meter
 	pc-charge += charge
 ;
 
 # add the charge of the current note to the npc charge
 : add-npc-charge
-	draw-npc-charge
+	draw-npc-charge-meter
 	npc-charge += charge
+;
+
+## CHARGE LOOP ###############################################################
+
+: charge-state
+	pxl := 0
+	pxr := PLAYER_X
+	ticker := 0
+
+	draw-npc
+
+	loop
+		vf := 20
+		delay := vf
+
+		loop
+			vf := delay
+			if vf != 0 then
+		again
+
+		charge-loop
+	again
+;
+
+: charge-loop
+	draw-npc
+	pxl += 3
+	draw-npc
+
+	if pxl <= 18 then return
+
+	draw-player
+	pxr += -3
+	draw-player
 ;
 
 ## DRAW ROUTINES #############################################################
@@ -339,8 +398,11 @@
 ;
 
 : draw-player
-	x := 100
-	y := 33
+	# X depends on the state
+	if state == STATE_TAPTAP then x := PLAYER_X
+	if state == STATE_CHARGE then x := pxr
+
+	y := CHARACTER_Y
 
 	plane 1
 	i := hors
@@ -356,7 +418,7 @@
 	sprite x y 1
 
 	i := lance
-	x := -37
+	x += -16
 	y += 5
 	plane 1
 	sprite x y 0
@@ -364,7 +426,33 @@
 	sprite x y 0	
 ;
 
-: draw-npc-charge
+: draw-npc
+	x := pxl
+	y := CHARACTER_Y
+
+	plane 2
+	i := hors-reverse
+	sprite x y 0
+
+	i := mans-reverse
+	x += 5
+	plane 1
+	sprite x y 12
+
+	#plane 2
+	#i := hats
+	#sprite x y 1
+
+	i := lance-reverse
+	x += 4
+	y += 4
+	plane 1
+	sprite x y 0
+	plane 2
+	sprite x y 0
+;
+
+: draw-npc-charge-meter
 	x := npc-charge
 	y := 62
 	j := x
@@ -380,7 +468,7 @@
 	again
 ;
 
-: draw-pc-charge
+: draw-pc-charge-meter
 	x := pc-charge
 	y := 255
 	x =- y
@@ -402,8 +490,10 @@
 
 ## SPRITES ###################################################################
 : mans
-0x60 0xC0 0xC0 0x40 0x60 0xE0 0xE0 0x60 
-0x40 0x40 0x40 0x40
+0x60 0xC0 0xC0 0x40 0x60 0xE0 0xE0 0x60 0x40 0x40 0x40 0x40
+
+: mans-reverse
+0xE0 0x60 0x60 0x40 0xC0 0xE0 0xE0 0xC0 0x40 0x40 0x40 0x40
 
 : hats
 0x60
@@ -412,13 +502,25 @@
 0x00 0x07 0xFF 0xFF 0x00 0x00 0x00 0x00 
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: lance-reverse
+0xE0 0x00 0xFF 0xFF 0x00 0x00 0x00 0x00 
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
 
 : hors
 0x00 0x00 0x60 0x00 0xF0 0x00 0xF0 0x00 
 0xF8 0x00 0xD8 0x00 0x1C 0x00 0x1F 0x1C 
 0x3F 0x7C 0x3F 0x7C 0x3F 0x7C 0x27 0x1C 
-0x24 0x1C 0x24 0x14 0x24 0x14 0x24 0x14    
+0x24 0x1C 0x24 0x14 0x24 0x14 0x24 0x14  
+
+: hors-reverse
+0x00 0x00 0x00 0x0C 0x00 0x1E 0x00 0x3E 
+0x00 0x3E 0x00 0x76 0x38 0xF0 0x79 0xF0 
+0x7D 0xF8 0x7D 0xF8 0x7D 0xF8 0x59 0xC8 
+0x58 0x48 0x50 0x48 0x50 0x48 0x50 0x48 
 
 : ground
 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 
