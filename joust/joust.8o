@@ -67,8 +67,8 @@
 	draw-ground
 	setup-player
 
-	npc-charge := 100
-	pc-charge := 155
+	npc-charge := 155
+	pc-charge := 100
 
 	state := STATE_CHARGE
 	return
@@ -475,6 +475,18 @@
 	i := hors
 	sprite x y 0
 
+	draw-pc-knight	
+;
+
+: draw-pc-knight
+	if state == STATE_TAPTAP then jump draw-pc-knight-mounted
+	if state == STATE_CHARGE then jump draw-pc-knight-mounted
+	if state == STATE_NPC_LOSE then jump draw-pc-knight-mounted
+
+	draw-pc-knight-dismounted
+;
+
+: draw-pc-knight-mounted
 	i := mans
 	x += 7
 	plane 2
@@ -490,7 +502,26 @@
 	plane 1
 	sprite x y 0
 	plane 2
-	sprite x y 0	
+	sprite x y 0
+;
+
+: draw-pc-knight-dismounted
+	plane 1
+
+	# initial start position
+	x := 75
+	y := CHARACTER_Y
+
+	if fall-step > 12 then fall-step := 12
+
+	x += fall-step
+	x += fall-step
+	y += fall-step
+
+	plane 2
+	if fall-step >= 10 then jump draw-pc-knight-dismounted-3
+	if fall-step >= 5 then 	jump draw-pc-knight-dismounted-2
+	if fall-step >= 1 then 	jump draw-pc-knight-dismounted-1
 ;
 
 : draw-npc
@@ -537,11 +568,27 @@
 	if fall-step > 12 then fall-step := 12
 
 	x -= fall-step
+	x -= fall-step
 	y += fall-step
 
-	if fall-step >= 12 then jump draw-npc-knight-dismounted-3
-	if fall-step >= 6 then 	jump draw-npc-knight-dismounted-2
+	if fall-step >= 10 then jump draw-npc-knight-dismounted-3
+	if fall-step >= 5 then 	jump draw-npc-knight-dismounted-2
 	if fall-step >= 1 then 	jump draw-npc-knight-dismounted-1
+;
+
+: draw-pc-knight-dismounted-1
+	i := mans-hit-1
+	sprite x y 12
+;
+
+: draw-pc-knight-dismounted-2
+	i := mans-hit-2
+	sprite x y 12
+;
+
+: draw-pc-knight-dismounted-3
+	i := mans-hit-3
+	sprite x y 12
 ;
 
 : draw-npc-knight-dismounted-1
@@ -598,6 +645,15 @@
 ## SPRITES ###################################################################
 : mans
 0x60 0xC0 0xC0 0x40 0x60 0xE0 0xE0 0x60 0x40 0x40 0x40 0x40
+
+: mans-hit-1
+0x00 0x0C 0x0E 0x06 0x03 0x0F 0x03 0x1F 0x06 0x08 0x08 0x00
+
+: mans-hit-2
+0x00 0x06 0x0E 0x2C 0x14 0x0C 0x7E 0x98 0x20 0x40 0x00 0x00
+
+: mans-hit-3
+0x00 0x20 0x73 0xFF 0x04 0x08 0x00 0x00 0x00 0x00 0x00 0x00
 
 : mans-reverse
 0xE0 0x60 0x60 0x40 0xC0 0xE0 0xE0 0xC0 0x40 0x40 0x40 0x40
