@@ -378,6 +378,7 @@
 	pxl := 0
 	pxr := PLAYER_X
 	ticker := 0
+	fall-step := 0
 
 	draw-npc
 
@@ -527,16 +528,34 @@
 ;
 
 : draw-npc-knight-dismounted
-	i := mans-reverse
 	plane 1
 
 	# initial start position
 	x := JOUST_X
 	y := CHARACTER_Y
 
-	#x -= fall-step
-	#y += fall-step
+	if fall-step > 12 then fall-step := 12
 
+	x -= fall-step
+	y += fall-step
+
+	if fall-step >= 12 then jump draw-npc-knight-dismounted-3
+	if fall-step >= 6 then 	jump draw-npc-knight-dismounted-2
+	if fall-step >= 1 then 	jump draw-npc-knight-dismounted-1
+;
+
+: draw-npc-knight-dismounted-1
+	i := mans-reverse-hit-1
+	sprite x y 12
+;
+
+: draw-npc-knight-dismounted-2
+	i := mans-reverse-hit-2
+	sprite x y 12
+;
+
+: draw-npc-knight-dismounted-3
+	i := mans-reverse-hit-3
 	sprite x y 12
 ;
 
@@ -582,6 +601,15 @@
 
 : mans-reverse
 0xE0 0x60 0x60 0x40 0xC0 0xE0 0xE0 0xC0 0x40 0x40 0x40 0x40
+
+: mans-reverse-hit-1
+0x00 0x30 0x70 0x60 0xC0 0xF0 0xC0 0xF8 0x60 0x10 0x10 0x00
+
+: mans-reverse-hit-2
+0x00 0x60 0x70 0x34 0x28 0x30 0x3E 0x19 0x04 0x02 0x00 0x00
+
+: mans-reverse-hit-3
+0x00 0x04 0xCE 0xFF 0x20 0x10 0x00 0x00 0x00 0x00 0x00 0x00
 
 : hats
 0x60
