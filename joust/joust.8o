@@ -358,6 +358,10 @@
 
 	loop
 		load v1 - v1
+		v1 >>= v1
+		v1 >>= v1
+		v1 >>= v1
+		v1 >>= v1
 
 		v0 := 8
 		if v1 != 0 then i += v0
