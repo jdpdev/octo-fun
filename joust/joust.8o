@@ -44,10 +44,10 @@
 :const PC_PLANE		2
 :const NPC_PLANE	1
 
-:const DRAW_HIT_SPOT_MIN	105
-:const DRAW_HIT_SPOT_MAX 	110
-:const HIT_SPOT_MIN 		98
-:const HIT_SPOT_MAX 		110
+:const DRAW_HIT_SPOT_MIN	62
+:const DRAW_HIT_SPOT_MAX 	67
+:const HIT_SPOT_MIN 		55
+:const HIT_SPOT_MAX 		67
 
 :const PLAYER_X				96
 :const CHARACTER_Y			33
@@ -133,11 +133,7 @@
 	type += 1
 	settype
 
-	v0 := random 3
-	if v0 == 0 then input := 0x7
-	if v0 == 1 then input := 0x8
-	if v0 == 2 then input := 0x9
-	if v0 == 3 then input := 0xE
+	random-base-input
 	setinput
 
 	px := 0
@@ -298,9 +294,11 @@
 	gettype
 
 	# kill when off-screen
-	if px >= 125 then type := 0
-	settype
-
+	if px >= 68 begin 
+		type := 0
+		settype
+	end
+	
 	px += 1
 	save-note
 ;
@@ -416,6 +414,10 @@
 		while v0 != 10
 	again
 ;
+
+## NOTE BEHAVIORS ############################################################
+
+
 
 ## CHARGE LOOP ###############################################################
 
@@ -708,6 +710,43 @@
 		x += 1
 		while x != v3
 	again
+;
+
+## INPUT TABLES ##############################################################
+
+# set a random input value from the basic input table
+: random-base-input
+	v0 := random 0b11
+	v0 <<= v0
+	v0 <<= v0
+	jump0 jump-basic-input
+;
+
+# basic input jump table
+: jump-basic-input
+	input := 0x7 return
+	input := 0x8 return
+	input := 0x9 return
+	input := 0xE return
+;
+
+: random-question-input
+	v0 := random 0b111
+	v0 <<= v0
+	v0 <<= v0
+	jump0 jump-basic-input
+;
+
+# input with question tile jump table
+: jump-question-input
+	input := 0x0 return
+	input := 0x0 return
+	input := 0x7 return
+	input := 0x7 return
+	input := 0x8 return
+	input := 0x8 return
+	input := 0x9 return
+	input := 0xE return
 ;
 
 ## SPRITES ###################################################################
