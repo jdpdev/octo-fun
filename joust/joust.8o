@@ -471,11 +471,9 @@
 
 	gettype
 	type += -4
-
-	if type == NOTE_STD_1 then py := 0
-	if type == NOTE_STD_2 then py := 1
-
 	settype
+
+	py := random 1
 
 	v0 := v2
 ;
@@ -572,6 +570,7 @@
 
 : generate-question-note
 	type := random 1
+	py := type 	# don't spawn questions on wrong lane
 	type += 3
 	settype
 
@@ -579,7 +578,6 @@
 	setinput
 
 	px := 0
-	py := random 1
 
 	charge := 3
 ;
