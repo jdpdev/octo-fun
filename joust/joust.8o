@@ -44,8 +44,12 @@
 :const NOTE_NONE		0	# not an active note
 :const NOTE_STD_1		1	# standard block note for layer 1
 :const NOTE_STD_2		2	# standard block note for layer 2
-:const NOTE_STD_Q_1		3
+:const NOTE_STD_Q_1		3	# note hides input until last moment
 :const NOTE_STD_Q_2		4
+:const NOTE_SPLIT_1		5	# a note that splits lanes before it switches to one
+:const NOTE_SPLIT_2		6
+:const NOTE_SPLIT_Q_1	7	# split lanes and hide input
+:const NOTE_SPLIT_Q_2	8
 
 :const PC_PLANE		2
 :const NPC_PLANE	1
@@ -140,13 +144,13 @@
 
 # generate details of a new note
 : generate-new-note
-	#type := random 1
-	#type += 1
-	type := NOTE_STD_Q_1
+	type := random 1
+	type += 1
+	#type := NOTE_STD_Q_1
 	settype
 
-	#random-base-input
-	input := 0
+	random-base-input
+	#input := 0
 	setinput
 
 	px := 0
@@ -158,7 +162,7 @@
 
 	spawn-timer := 0
 	next-spawn := random 20
-	next-spawn += 60
+	next-spawn += 20
 
 	charge := 1
 	add-npc-charge
@@ -327,43 +331,6 @@
 	sprite px v2 8
 ;
 
-# sets i to the sprite associated with the current note
-: get-note-sprite
-	gettype
-	# layer 1
-	if type == NOTE_STD_1 begin
-		plane 1
-		jump build-std-note-sprite
-	end
-
-	if type == NOTE_STD_Q_1 begin
-		plane 1
-		jump build-std-note-sprite
-	end
-
-	# layer 2
-	if type == NOTE_STD_2 begin
-		plane 2
-		jump build-std-note-sprite
-	end
-
-	# layer 2
-	if type == NOTE_STD_Q_2 begin
-		plane 2
-		jump build-std-note-sprite
-	end
-;
-
-# build a standard note sprite
-: build-std-note-sprite
-	getinput
-	if input == 0x0 then i := note-simple-q
-	if input == 0x7 then i := note-simple-a
-	if input == 0x8 then i := note-simple-s
-	if input == 0x9 then i := note-simple-d
-	if input == 0xE then i := note-simple-f
-;
-
 # saves a new note to the first empty note slot
 # the data of the note should already be populated to the registers
 : spawn-note
@@ -433,6 +400,51 @@
 	again
 ;
 
+## NOTE DRAWING ##############################################################
+
+# sets i to the sprite associated with the current note
+: get-note-sprite
+	gettype
+	# layer 1
+	if type == NOTE_STD_1 	then jump draw-note-1
+	if type == NOTE_STD_Q_1 then jump draw-note-1
+
+	# layer 2
+	if type == NOTE_STD_2 	then jump draw-note-2
+	if type == NOTE_STD_Q_2 then jump draw-note-2
+
+	# split
+	if type == NOTE_SPLIT_1   then jump draw-note-3
+	if type == NOTE_SPLIT_2   then jump draw-note-3
+	if type == NOTE_SPLIT_Q_1 then jump draw-note-3
+	if type == NOTE_SPLIT_Q_2 then jump draw-note-3
+;
+
+: draw-note-1
+	plane 1
+	jump build-std-note-sprite
+;
+
+: draw-note-2
+	plane 2
+	jump build-std-note-sprite
+;
+
+: draw-note-3
+	draw-note-1
+	draw-note-2
+;
+
+# build a standard note sprite
+: build-std-note-sprite
+	getinput
+	if input == 0x0 then i := note-simple-q
+	if input == 0x7 then i := note-simple-a
+	if input == 0x8 then i := note-simple-s
+	if input == 0x9 then i := note-simple-d
+	if input == 0xE then i := note-simple-f
+;
+
 ## NOTE BEHAVIORS ############################################################
 
 # entry point to behavior table
@@ -443,8 +455,6 @@
 	v0 := v1
 	v0 <<= v0
 	v0 += 2
-	#v0 <<= v0
-	#:breakpoint do-behavior
 	jump0 jump-behaviors
 ;
 
@@ -455,8 +465,13 @@
 	jump std-behavior
 	jump std-question-behavior
 	jump std-question-behavior
+	jump split-behavior
+	jump split-behavior
+	jump split-question-behavior
+	jump split-question-behavior
 ;
 
+# A standard note on its merry way
 : std-behavior
 	v0 := v2		# restore the counter
 
@@ -464,6 +479,7 @@
 	if px >= 68 then note-self-kill
 ;
 
+# A standard note that doesn't reveal its input until the last moment
 : std-question-behavior
 	v0 := v2		# restore the counter
 
@@ -478,6 +494,16 @@
 	settype
 
 	v0 := v2		# restore the counter
+;
+
+# A note that doesn't show its lane until the last moment
+: split-behavior
+
+;
+
+# A note that doesn't show its lane or input until the last moment
+: split-question-behavior
+
 ;
 
 : note-self-kill
