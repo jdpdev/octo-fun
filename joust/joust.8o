@@ -41,6 +41,10 @@
 :const STATE_PC_LOSE 	4
 :const STATE_RESULT	 	5
 
+:const NOTE_NONE		0	# not an active note
+:const NOTE_STD_1		1	# standard block note for layer 1
+:const NOTE_STD_2		2	# standard block note for layer 2
+
 :const PC_PLANE		2
 :const NPC_PLANE	1
 
@@ -177,7 +181,7 @@
 		load-note
 		gettype
 
-		if type != 0 begin
+		if type != NOTE_NONE begin
 			can-hit-note
 
 			if v1 == 1 then jump hit-note
@@ -222,7 +226,7 @@
 
 : remove-note
 	gettype
-	if type == 0 then return
+	if type == NOTE_NONE then return
 
 	draw-note
 
@@ -255,7 +259,7 @@
 	load-note
 	gettype
 
-	if type == 0 then return
+	if type == NOTE_NONE then return
 
 	draw-note
 	step-note
@@ -293,12 +297,8 @@
 : step-note
 	gettype
 
-	# kill when off-screen
-	if px >= 68 begin 
-		type := 0
-		settype
-	end
-	
+	do-behavior
+
 	px += 1
 	save-note
 ;
@@ -306,7 +306,7 @@
 # draws the note loaded into memory
 : draw-note
 	gettype
-	if type == 0 then return
+	if type == NOTE_NONE then return
 
 	get-note-sprite
 
@@ -321,29 +321,27 @@
 # sets i to the sprite associated with the current note
 : get-note-sprite
 	gettype
-	# opponent
-	if type == 1 begin
-		getinput
+	# layer 1
+	if type == NOTE_STD_1 begin
 		plane 1
-		if input == 0x0 then i := note-simple-q
-		if input == 0x7 then i := note-simple-a
-		if input == 0x8 then i := note-simple-s
-		if input == 0x9 then i := note-simple-d
-		if input == 0xE then i := note-simple-f
-		return
+		jump build-std-note-sprite
 	end
 
-	# player
-	if type == 2 begin
-		getinput
+	# layer 2
+	if type == NOTE_STD_2 begin
 		plane 2
-		if input == 0x0 then i := note-simple-q
-		if input == 0x7 then i := note-simple-a
-		if input == 0x8 then i := note-simple-s
-		if input == 0x9 then i := note-simple-d
-		if input == 0xE then i := note-simple-f
-		return
+		jump build-std-note-sprite
 	end
+;
+
+# build a standard note sprite
+: build-std-note-sprite
+	getinput
+	if input == 0x0 then i := note-simple-q
+	if input == 0x7 then i := note-simple-a
+	if input == 0x8 then i := note-simple-s
+	if input == 0x9 then i := note-simple-d
+	if input == 0xE then i := note-simple-f
 ;
 
 # saves a new note to the first empty note slot
@@ -362,8 +360,8 @@
 		v1 >>= v1
 
 		v0 := 8
-		if v1 != 0 then i += v0
-		while v1 != 0
+		if v1 != NOTE_NONE then i += v0
+		while v1 != NOTE_NONE
 	again
 
 	save details - charge
@@ -417,7 +415,35 @@
 
 ## NOTE BEHAVIORS ############################################################
 
+# entry point to behavior table
+: do-behavior
+	v2 := v0
 
+	gettype
+	v0 := v1
+	v0 <<= v0
+	v0 <<= v0
+	jump0 jump-behaviors
+;
+
+: jump-behaviors
+	return 
+	return			# type 0 does nothing
+	std-behavior 
+	return		# standard note
+	std-behavior 
+	return
+;
+
+: std-behavior
+	v0 := v2		# preserve the counter
+
+	# kill when off-screen
+	if px >= 68 begin 
+		type := NOTE_NONE
+		settype
+	end
+;
 
 ## CHARGE LOOP ###############################################################
 
