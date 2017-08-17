@@ -44,6 +44,8 @@
 :const NOTE_NONE		0	# not an active note
 :const NOTE_STD_1		1	# standard block note for layer 1
 :const NOTE_STD_2		2	# standard block note for layer 2
+:const NOTE_STD_Q_1		3
+:const NOTE_STD_Q_2		4
 
 :const PC_PLANE		2
 :const NPC_PLANE	1
@@ -111,7 +113,7 @@
 	loop
 		if state != STATE_TAPTAP then jump exit-taptap
 
-		vf := 3
+		vf := 2
 		delay := vf
 
 		loop
@@ -138,11 +140,13 @@
 
 # generate details of a new note
 : generate-new-note
-	type := random 1
-	type += 1
+	#type := random 1
+	#type += 1
+	type := NOTE_STD_Q_1
 	settype
 
-	random-base-input
+	#random-base-input
+	input := 0
 	setinput
 
 	px := 0
@@ -154,7 +158,7 @@
 
 	spawn-timer := 0
 	next-spawn := random 20
-	next-spawn += 20
+	next-spawn += 60
 
 	charge := 1
 	add-npc-charge
@@ -304,7 +308,7 @@
 
 	do-behavior
 
-	px += 1
+	px += 2
 	save-note
 ;
 
@@ -332,8 +336,19 @@
 		jump build-std-note-sprite
 	end
 
+	if type == NOTE_STD_Q_1 begin
+		plane 1
+		jump build-std-note-sprite
+	end
+
 	# layer 2
 	if type == NOTE_STD_2 begin
+		plane 2
+		jump build-std-note-sprite
+	end
+
+	# layer 2
+	if type == NOTE_STD_Q_2 begin
 		plane 2
 		jump build-std-note-sprite
 	end
@@ -427,20 +442,22 @@
 	gettype
 	v0 := v1
 	v0 <<= v0
-	v0 <<= v0
+	v0 += 2
+	#v0 <<= v0
+	#:breakpoint do-behavior
 	jump0 jump-behaviors
 ;
 
 : jump-behaviors
-	return return			# type 0 does nothing
-	std-behavior return		# standard note
-	std-behavior return
+	return 
+	return					# type 0 does nothing
+	jump std-behavior 				# standard note
+	jump std-behavior
+	jump std-question-behavior
+	jump std-question-behavior
 ;
 
 : std-behavior
-	getinput
-	if v1 == 0x0 then std-question-behavior
-
 	v0 := v2		# restore the counter
 
 	# kill when off-screen
@@ -448,10 +465,19 @@
 ;
 
 : std-question-behavior
-	if px >= 40 begin
-		random-base-input
-		setinput
-	end 
+	v0 := v2		# restore the counter
+
+	if px < 40 then return
+
+	# convert to standard note
+	random-base-input
+	setinput
+
+	gettype
+	type += -2
+	settype
+
+	v0 := v2		# restore the counter
 ;
 
 : note-self-kill
