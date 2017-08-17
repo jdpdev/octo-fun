@@ -108,11 +108,16 @@
 	draw-ground
 	setup-player
 
-	#npc-charge := 120
-	#pc-charge := 128
-
 	loop
 		if state != STATE_TAPTAP then jump exit-taptap
+
+		vf := 3
+		delay := vf
+
+		loop
+			vf := delay
+			if vf != 0 then
+		again
 
 		loop-notes
 		read-input
