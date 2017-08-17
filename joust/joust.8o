@@ -427,22 +427,31 @@
 ;
 
 : jump-behaviors
-	return 
-	return			# type 0 does nothing
-	std-behavior 
-	return		# standard note
-	std-behavior 
-	return
+	return return			# type 0 does nothing
+	std-behavior return		# standard note
+	std-behavior return
 ;
 
 : std-behavior
-	v0 := v2		# preserve the counter
+	getinput
+	if v1 == 0x0 then std-question-behavior
+
+	v0 := v2		# restore the counter
 
 	# kill when off-screen
-	if px >= 68 begin 
-		type := NOTE_NONE
-		settype
-	end
+	if px >= 68 then note-self-kill
+;
+
+: std-question-behavior
+	if px >= 40 begin
+		random-base-input
+		setinput
+	end 
+;
+
+: note-self-kill
+	type := NOTE_NONE
+	settype
 ;
 
 ## CHARGE LOOP ###############################################################
