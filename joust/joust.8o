@@ -1,12 +1,16 @@
 # Structure for individual notes
-:alias type			v9	# type of note
-:alias input		va	# key code note looks for
+:alias type			v1	# type of note
+:alias input		v1	# key code note looks for
+:alias details		va	# type of node (0xF0) and key code (0x0F)
 :alias px			vb	# x position of the note
 :alias py 			vc	# y position of the note (lane, not actual position)
 :alias charge 		vd	# charge granted by the note
 #:alias ???			vc 
 #:alias ???			vd 
 #:alias ???			ve 
+
+:const MASK_TYPE	0b11110000
+:const MASK_INPUT	0b00001111
 
 # Structure for charging
 :alias pxl			v9	# position of the left horse
@@ -62,6 +66,37 @@
 	again
 ;
 
+## DATAFYING #################################################################
+: gettype
+	v1 := details
+	v1 >>= v1
+	v1 >>= v1
+	v1 >>= v1
+	v1 >>= v1
+;
+
+: settype
+	v1 <<= v1
+	v1 <<= v1
+	v1 <<= v1
+	v1 <<= v1
+
+	vf := MASK_INPUT
+	details &= vf
+	details += v1
+;
+
+: getinput
+	v1 := MASK_INPUT
+	v1 &= details
+;
+
+: setinput
+	vf := MASK_TYPE
+	details &= vf
+	details += v1
+;
+
 ## GAME LOOP #################################################################
 : game-loop
 	next-spawn := 30
@@ -96,12 +131,14 @@
 : generate-new-note
 	type := random 1
 	type += 1
+	settype
 
 	v0 := random 3
 	if v0 == 0 then input := 0x7
 	if v0 == 1 then input := 0x8
 	if v0 == 2 then input := 0x9
 	if v0 == 3 then input := 0xE
+	setinput
 
 	px := 0
 	py := random 1
@@ -122,28 +159,27 @@
 : read-input
 	if state != STATE_TAPTAP then return
 
-	v0 := 0x7
-	if v0 key then jump process-input
+	v3 := 0x7
+	if v3 key then jump process-input
 	
-	v0 := 0x8
-	if v0 key then jump process-input
+	v3 := 0x8
+	if v3 key then jump process-input
 
-	v0 := 0x9
-	if v0 key then jump process-input
+	v3 := 0x9
+	if v3 key then jump process-input
 
-	v0 := 0xE
-	if v0 key then jump process-input
+	v3 := 0xE
+	if v3 key then jump process-input
 ;
 
 # if input made, go through notes to see if there is one in sweet spot,
 # and determine if input is correct for it
 : process-input
-	i := notes
-	v2 := 0
-	v3 := 8
+	v0 := 0
 
 	loop
 		load-note
+		gettype
 
 		if type != 0 begin
 			can-hit-note
@@ -151,76 +187,50 @@
 			if v1 == 1 then jump hit-note
 		end
 
-		i += v3
-		v2 += 1
-		while v2 != 10
+		v0 += 1
+		while v0 != 10
 	again
 ;
 
 # process result of hitting the current note
 # v0 is the key that was hit
 : hit-note
-	v1 := type
+	gettype
 	v1 += -1
 
 	if v1 != py 		then jump process-bad-hit
-	if input != v0 		then jump process-bad-hit
+	if input != v3 		then jump process-bad-hit
 
 	process-good-hit
 ;
 
 # process hitting the note correctly
 : process-good-hit
-	v3 := v2
+	load-note
 	add-pc-charge
 	remove-note
 ;
 
 # process hitting the note poorly
 : process-bad-hit
-	v3 := v2
+	load-note
 	add-npc-charge
-	remove-note
+	
+	if v1 == 0 then remove-note
 
 	v0 := 10
 	buzzer := v0
 ;
 
-: exit-taptap
-	v2 := 0
-
-	loop
-		i := notes
-		v3 := v2
-		v3 <<= v3
-		v3 <<= v3
-		v3 <<= v3
-		i += v3
-
-		load-note
-
-		v3 := v2
-		remove-note
-
-		v2 += 1
-		while v2 != 10
-	again
-;
-
 : remove-note
+	gettype
 	if type == 0 then return
 
 	draw-note
 
 	type := 0
-
-	v3 <<= v3
-	v3 <<= v3
-	v3 <<= v3
-
-	i := notes
-	i += v3
-	save type - charge
+	settype
+	save-note
 ;
 
 # determines if the current note is in the hit zone, and saves result to v1
@@ -244,13 +254,8 @@
 # draw and update an individual note
 # this loads the note in memory, based on index counter v0 set by :loop-notes
 : update-note
-	v1 := v0
-	note-index-to-offset
-
-	i := notes
-	i += v1
-
 	load-note
+	gettype
 
 	if type == 0 then return
 
@@ -259,29 +264,40 @@
 	draw-note
 ;
 
+# convert v0 into memory offset and put in v1
 : note-index-to-offset
+	v1 := v0
 	v1 <<= v1
 	v1 <<= v1
 	v1 <<= v1
 ;
 
-# loads the note at the current i position
+# loads a note from memory
+# v0 is index of the note to load
+# uses v1 to store memory offset
 : load-note
-	load type - charge
-;
-
-# v1 is the memory offset of the current note
-: save-note
+	note-index-to-offset
 	i := notes
 	i += v1
-	save type - charge
+	load details - charge
+;
+
+# v0 is the index of the current note
+# uses v1 to store memory offset
+: save-note
+	note-index-to-offset
+	i := notes
+	i += v1
+	save details - charge
 ;
 
 # step the note loaded into memory
 : step-note
+	gettype
 
 	# kill when off-screen
 	if px >= 125 then type := 0
+	settype
 
 	px += 1
 	save-note
@@ -289,6 +305,7 @@
 
 # draws the note loaded into memory
 : draw-note
+	gettype
 	if type == 0 then return
 
 	get-note-sprite
@@ -303,24 +320,29 @@
 
 # sets i to the sprite associated with the current note
 : get-note-sprite
+	gettype
 	# opponent
 	if type == 1 begin
+		getinput
 		plane 1
 		if input == 0x0 then i := note-simple-q
 		if input == 0x7 then i := note-simple-a
 		if input == 0x8 then i := note-simple-s
 		if input == 0x9 then i := note-simple-d
 		if input == 0xE then i := note-simple-f
+		return
 	end
 
 	# player
 	if type == 2 begin
+		getinput
 		plane 2
 		if input == 0x0 then i := note-simple-q
 		if input == 0x7 then i := note-simple-a
 		if input == 0x8 then i := note-simple-s
 		if input == 0x9 then i := note-simple-d
 		if input == 0xE then i := note-simple-f
+		return
 	end
 ;
 
@@ -340,7 +362,7 @@
 		while v1 != 0
 	again
 
-	save type - charge
+	save details - charge
 ;
 
 # add the charge of the current note to the pc charge
@@ -361,15 +383,32 @@
 
 # look for when the charges meet
 : check-charges
-	v0 := pc-charge
-	v0 += npc-charge
+	v1 := pc-charge
+	v1 += npc-charge
 
-	if v0 >= 128 then goto-charge
+	if v1 >= 128 begin 
+		goto-charge
+		v1 := 1
+	else
+		v1 := 0
+	end
 ;
 
 : goto-charge
 	draw-hit-zone
 	state := STATE_CHARGE
+;
+
+: exit-taptap
+	v0 := 0
+
+	loop
+		load-note
+
+		remove-note
+		v0 += 1
+		while v0 != 10
+	again
 ;
 
 ## CHARGE LOOP ###############################################################
@@ -633,8 +672,8 @@
 : draw-npc-charge-meter
 	x := npc-charge
 	y := 62
-	j := x
-	j += charge
+	v3 := x
+	v3 += charge
 
 	plane NPC_PLANE
 	i := fill-bar
@@ -642,7 +681,7 @@
 	loop
 		sprite x y 2
 		x += 1
-		while x != j
+		while x != v3
 	again
 ;
 
@@ -651,7 +690,7 @@
 	y := 127
 	x =- y
 	x += 1
-	j := x
+	v3 := x
 	x -= charge
 	y := 62
 
@@ -661,7 +700,7 @@
 	loop
 		sprite x y 2
 		x += 1
-		while x != j
+		while x != v3
 	again
 ;
 
