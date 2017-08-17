@@ -199,6 +199,8 @@
 	v1 += -1
 
 	if v1 != py 		then jump process-bad-hit
+
+	getinput
 	if input != v3 		then jump process-bad-hit
 
 	process-good-hit
