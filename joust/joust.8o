@@ -18,9 +18,14 @@
 :alias ticker		vb
 
 # Constant world state
-:alias state 		v4
+:alias gamestate	v0
+:alias opponent 	v1
+:alias state 		v4	# opponent step (0xF0) and game state (0x0F)
 :alias pc-charge	v5
 :alias npc-charge	v6
+
+:const MASK_OPPONENT 0b11110000
+:const MASK_STATE	 0b00001111
 
 # taptap world state
 :alias spawn-timer	v7
@@ -35,11 +40,12 @@
 :alias y v2
 
 :const STATE_TITLE		0
-:const STATE_TAPTAP		1
-:const STATE_CHARGE		2
-:const STATE_NPC_LOSE	3
-:const STATE_PC_LOSE 	4
-:const STATE_RESULT	 	5
+:const STATE_OPPONENT	1
+:const STATE_TAPTAP		2
+:const STATE_CHARGE		3
+:const STATE_NPC_LOSE	4
+:const STATE_PC_LOSE 	5
+:const STATE_RESULT	 	6
 
 :const NOTE_NONE		0	# not an active note
 :const NOTE_STD_1		1	# standard block note for layer 1
@@ -65,15 +71,14 @@
 :const JOUST_X				48	# x position of npc at the collision point
 
 : main
-	state := STATE_TITLE
-
 	loop
-		if state == STATE_TITLE		then title-screen
-		if state == STATE_TAPTAP	then game-loop
-		if state == STATE_CHARGE	then charge-state
-		if state == STATE_NPC_LOSE	then charge-state
-		if state == STATE_PC_LOSE	then charge-state
-		if state == STATE_RESULT	then result-state
+		getstate
+		if gamestate == STATE_TITLE		then title-screen
+		if gamestate == STATE_TAPTAP	then game-loop
+		if gamestate == STATE_CHARGE	then charge-state
+		if gamestate == STATE_NPC_LOSE	then charge-state
+		if gamestate == STATE_PC_LOSE	then charge-state
+		if gamestate == STATE_RESULT	then result-state
 	again
 ;
 
@@ -108,6 +113,36 @@
 	details += v1
 ;
 
+: getopponent
+	opponent := state
+	opponent >>= opponent
+	opponent >>= opponent
+	opponent >>= opponent
+	opponent >>= opponent
+;
+
+: setopponent
+	opponent <<= opponent
+	opponent <<= opponent
+	opponent <<= opponent
+	opponent <<= opponent
+
+	vf := MASK_OPPONENT
+	state &= vf
+	state += opponent
+;
+
+: getstate
+	gamestate := MASK_STATE
+	gamestate &= state
+;
+
+: setstate
+	vf := MASK_OPPONENT
+	state &= vf
+	state += gamestate
+;
+
 ## GAME LOOP #################################################################
 : game-loop
 	clear
@@ -119,7 +154,8 @@
 	next-spawn := 30
 
 	loop
-		if state != STATE_TAPTAP then jump exit-taptap
+		getstate
+		if gamestate != STATE_TAPTAP then jump exit-taptap
 
 		vf := 2
 		delay := vf
@@ -141,8 +177,6 @@
 
 # look for keyboard input
 : read-input
-	if state != STATE_TAPTAP then return
-
 	v3 := 0x7
 	if v3 key then jump process-input
 	
@@ -354,7 +388,9 @@
 
 : goto-charge
 	draw-hit-zone
-	state := STATE_CHARGE
+
+	gamestate := STATE_CHARGE
+	setstate
 ;
 
 : exit-taptap
@@ -520,7 +556,6 @@
 
 # check whether to spawn a new note
 : note-factory
-	if state != STATE_TAPTAP then return
 	spawn-timer += 1
 	if spawn-timer == next-spawn then generate-new-note
 ;
@@ -634,7 +669,8 @@
 	draw-npc
 
 	loop
-		if state == STATE_RESULT then return
+		getstate
+		if gamestate == STATE_RESULT then return
 
 		vf := 20
 		delay := vf
@@ -655,7 +691,8 @@
 	if pxl == JOUST_X then resolve-hit
 
 	# track ticks since the collision for animation purposes
-	if state != STATE_CHARGE then fall-step += 1
+	getstate
+	if gamestate != STATE_CHARGE then fall-step += 1
 
 	pxl += 3
 	draw-npc
@@ -669,12 +706,14 @@
 ;
 
 : resolve-hit
-	if pc-charge >= npc-charge then state := STATE_NPC_LOSE
-	if pc-charge < npc-charge then state := STATE_PC_LOSE
+	if pc-charge >= npc-charge then gamestate := STATE_NPC_LOSE
+	if pc-charge < npc-charge then gamestate := STATE_PC_LOSE
+	setstate
 ;
 
 : goto-result
-	state := STATE_RESULT
+	gamestate := STATE_RESULT
+	setstate
 ;
 
 ## RESULT SCREEN #############################################################
@@ -699,7 +738,8 @@
 	draw-chipjoust
 
 	v0 := key
-	state := STATE_TAPTAP
+	gamestate := STATE_TAPTAP
+	setstate
 ;
 
 ## DRAW ROUTINES #############################################################
@@ -753,8 +793,9 @@
 
 : draw-player
 	# X depends on the state
-	if state == STATE_TAPTAP then x := PLAYER_X
-	if state >= STATE_CHARGE then x := pxr
+	getstate
+	if gamestate >= STATE_CHARGE then x := pxr
+	if gamestate == STATE_TAPTAP then x := PLAYER_X
 
 	y := CHARACTER_Y
 
@@ -766,9 +807,10 @@
 ;
 
 : draw-pc-knight
-	if state == STATE_TAPTAP then jump draw-pc-knight-mounted
-	if state == STATE_CHARGE then jump draw-pc-knight-mounted
-	if state == STATE_NPC_LOSE then jump draw-pc-knight-mounted
+	getstate
+	if gamestate == STATE_TAPTAP then jump draw-pc-knight-mounted
+	if gamestate == STATE_CHARGE then jump draw-pc-knight-mounted
+	if gamestate == STATE_NPC_LOSE then jump draw-pc-knight-mounted
 
 	draw-pc-knight-dismounted
 ;
@@ -823,9 +865,10 @@
 ;
 
 : draw-npc-knight
-	if state == STATE_TAPTAP then jump draw-npc-knight-mounted
-	if state == STATE_CHARGE then jump draw-npc-knight-mounted
-	if state == STATE_PC_LOSE then jump draw-npc-knight-mounted
+	getstate
+	if gamestate == STATE_TAPTAP then jump draw-npc-knight-mounted
+	if gamestate == STATE_CHARGE then jump draw-npc-knight-mounted
+	if gamestate == STATE_PC_LOSE then jump draw-npc-knight-mounted
 
 	draw-npc-knight-dismounted
 ;
