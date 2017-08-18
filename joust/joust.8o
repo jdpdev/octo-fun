@@ -4,7 +4,6 @@
 :alias details		va	# type of node (0xF0) and key code (0x0F)
 :alias px			vb	# x position of the note
 :alias py 			vc	# y position of the note (lane, not actual position)
-:alias charge 		vd	# charge granted by the note
 #:alias ???			vc 
 #:alias ???			vd 
 #:alias ???			ve 
@@ -30,6 +29,7 @@
 # taptap world state
 :alias spawn-timer	v7
 :alias next-spawn	v8
+:alias charge 		vd	# charge granted by the note
 
 # charge world state
 :alias fall-ticks	v7	# ticks since the collision
@@ -69,6 +69,8 @@
 :const PLAYER_X				96
 :const CHARACTER_Y			33
 :const JOUST_X				48	# x position of npc at the collision point
+
+:const DEFAULT_CHARGE		3
 
 : main
 	loop
@@ -227,6 +229,7 @@
 # process hitting the note correctly
 : process-good-hit
 	load-note
+	charge := DEFAULT_CHARGE
 	add-pc-charge
 	remove-note
 ;
@@ -234,6 +237,7 @@
 # process hitting the note poorly
 : process-bad-hit
 	load-note
+	charge := DEFAULT_CHARGE
 	add-npc-charge
 	
 	if v1 == 0 then remove-note
@@ -274,10 +278,13 @@
 # draw and update an individual note
 # this loads the note in memory, based on index counter v0 set by :loop-notes
 : update-note
-	load-note
+	load-note-type
 	gettype
 
 	if type == NOTE_NONE then return
+	
+	load-note
+	gettype
 
 	draw-note
 	step-note
@@ -300,6 +307,14 @@
 	i := notes
 	i += v1
 	load details - charge
+;
+
+# only load the details for the note
+: load-note-type
+	note-index-to-offset
+	i := notes
+	i += v1
+	load details - details
 ;
 
 # v0 is the index of the current note
@@ -577,31 +592,6 @@
 	next-spawn += 20
 ;
 
-: goto-factory-jump-table
-	v0 := random 15
-	v0 <<= v0
-	jump0 jump-standard
-;
-
-: jump-standard
-	jump generate-standard-note
-	jump generate-standard-note
-	jump generate-standard-note
-	jump generate-standard-note
-	jump generate-standard-note
-	jump generate-standard-note
-	jump generate-question-note
-	jump generate-question-note
-	jump generate-question-note
-	jump generate-question-note
-	jump generate-split-note
-	jump generate-split-note
-	jump generate-split-note
-	jump generate-split-note
-	jump generate-split-question-note
-	jump generate-split-question-note
-;
-
 : generate-standard-note
 	type := random 1
 	type += 1
@@ -656,6 +646,136 @@
 	py := 2
 
 	charge := 3
+;
+
+: goto-factory-jump-table
+	level4
+;
+
+: jump-tables
+	jump level1
+	jump level2
+	jump level3
+	jump level4
+	jump level5
+	jump level6
+;
+
+: level1
+	jump jump-level1-table	
+;
+
+: jump-level1-table
+	jump generate-standard-note
+;
+
+: level2
+	v0 := random 1
+	v0 <<= v0
+	jump0 jump-level2-table
+;
+
+: jump-level2-table
+	jump generate-standard-note
+	jump generate-question-note
+;
+
+: level3
+	v0 := random 15
+	v0 <<= v0
+	jump0 jump-level3-table
+;
+
+: jump-level3-table
+	jump generate-standard-note
+	jump generate-standard-note
+	jump generate-standard-note
+	jump generate-standard-note
+	jump generate-standard-note
+	jump generate-standard-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+;
+
+: level4
+	v0 := random 15
+	v0 <<= v0
+	jump0 jump-level4-table
+;
+
+: jump-level4-table
+	jump generate-standard-note
+	jump generate-standard-note
+	jump generate-standard-note
+	jump generate-standard-note
+	jump generate-standard-note
+	jump generate-standard-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+;
+
+: level5
+	v0 := random 15
+	v0 <<= v0
+	jump0 jump-level5-table
+;
+
+: jump-level5-table
+	jump generate-standard-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+;
+
+: level6
+	v0 := random 15
+	v0 <<= v0
+	jump0 jump-level6-table
+;
+
+: jump-level6-table
+	jump generate-standard-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-question-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
 ;
 
 ## CHARGE LOOP ###############################################################
