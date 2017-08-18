@@ -74,8 +74,12 @@
 
 : main
 	loop
+		#gamestate := STATE_OPPONENT
+		#setstate
+
 		getstate
 		if gamestate == STATE_TITLE		then title-screen
+		if gamestate == STATE_OPPONENT	then opponent-screen
 		if gamestate == STATE_TAPTAP	then game-loop
 		if gamestate == STATE_CHARGE	then charge-state
 		if gamestate == STATE_NPC_LOSE	then charge-state
@@ -589,7 +593,7 @@
 : set-spawn-timer
 	spawn-timer := 0
 	next-spawn := random 20
-	next-spawn += 20
+	next-spawn += 10
 ;
 
 : generate-standard-note
@@ -846,6 +850,20 @@
 	if pc-charge < npc-charge  then draw-you-lose
 
 	v0 := key
+
+	getopponent
+	v1 += 1
+	setopponent
+
+	gamestate := STATE_OPPONENT
+	setstate
+
+	clear
+;
+
+: reset-state
+	pc-charge := 0
+	npc-charge := 0
 ;
 
 ## TITLE SCREEN ##############################################################
@@ -858,8 +876,36 @@
 	draw-chipjoust
 
 	v0 := key
+	gamestate := STATE_OPPONENT
+	setstate
+;
+
+## OPPONENT SCREEN ###########################################################
+
+: opponent-screen
+	hires
+
+	draw-preview-npc
+
+	getopponent
+	opponent += 1
+	i := bighex opponent
+
+	x := 79
+	y := 42
+	plane 1
+	sprite x y 10 
+	plane 2
+	sprite x y 10 
+
+	x := 35
+	draw-level-label
+
+	v0 := key
 	gamestate := STATE_TAPTAP
 	setstate
+
+	reset-state
 ;
 
 ## DRAW ROUTINES #############################################################
@@ -984,11 +1030,23 @@
 	draw-npc-knight
 ;
 
+: draw-preview-npc
+	x := 54
+	y := 19
+
+	plane 2
+	i := hors-reverse
+	sprite x y 0
+
+	draw-npc-knight
+;
+
 : draw-npc-knight
 	getstate
-	if gamestate == STATE_TAPTAP then jump draw-npc-knight-mounted
-	if gamestate == STATE_CHARGE then jump draw-npc-knight-mounted
-	if gamestate == STATE_PC_LOSE then jump draw-npc-knight-mounted
+	if gamestate == STATE_OPPONENT 	then jump draw-npc-knight-mounted
+	if gamestate == STATE_TAPTAP 	then jump draw-npc-knight-mounted
+	if gamestate == STATE_CHARGE 	then jump draw-npc-knight-mounted
+	if gamestate == STATE_PC_LOSE 	then jump draw-npc-knight-mounted
 
 	draw-npc-knight-dismounted
 ;
@@ -999,6 +1057,12 @@
 	plane 1
 	sprite x y 12
 
+	getstate
+	if gamestate != STATE_OPPONENT then jump draw-reverse-lance
+	draw-reverse-lance-up
+;
+
+: draw-reverse-lance
 	i := lance-reverse
 	x += 4
 	y += 4
@@ -1006,6 +1070,14 @@
 	sprite x y 0
 	plane 2
 	sprite x y 0
+;
+
+: draw-reverse-lance-up
+	i := lance-reverse-up
+	x += 3
+	y += -10
+	plane 3
+	sprite x y 15
 ;
 
 : draw-npc-knight-dismounted
@@ -1167,6 +1239,12 @@
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
+
+: lance-reverse-up
+0x40 0x40 0x40 0x40 0x40 0x40 0x40 0x40 
+0x40 0x40 0x40 0x40 0xC0 0xC0 0xC0 0x40 
+0x40 0x40 0x40 0x40 0x40 0x40 0x40 0x40 
+0x40 0x40 0x40 0xC0 0xC0 0xC0
 
 : hors
 0x00 0x00 0x60 0x00 0xF0 0x00 0xF0 0x00 
@@ -1336,6 +1414,46 @@
 	x += 16
 	i := chipjoustUST
 	sprite x y 0
+;
+
+: levelL 	0xB0 0x50 0x50 0x50 0x50 0x50 0x50 0x52 0x5E 0x3E
+: levelE 	0x2C 0xF2 0x50 0x50 0x58 0x50 0x50 0x50 0x52 0xBE 0x42
+: levelV	0x81 0x46 0x4A 0x4A 0x4A 0x4A 0x4A 0x4C 0x78 0x40 0x80
+
+: draw-level-label
+	i := levelL
+	plane 1
+	sprite x y 10
+	plane 2
+	sprite x y 10
+
+	x += 8
+	i := levelE
+	plane 1
+	sprite x y 10
+	plane 2
+	sprite x y 10
+
+	x += 8
+	i := levelV
+	plane 1
+	sprite x y 10
+	plane 2
+	sprite x y 10
+
+	x += 8
+	i := levelE
+	plane 1
+	sprite x y 10
+	plane 2
+	sprite x y 10
+
+	x += 8
+	i := levelL
+	plane 1
+	sprite x y 10
+	plane 2
+	sprite x y 10
 ;
 
 ## MEMORY ####################################################################
