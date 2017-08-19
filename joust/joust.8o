@@ -133,7 +133,7 @@
 	opponent <<= opponent
 	opponent <<= opponent
 
-	vf := MASK_OPPONENT
+	vf := MASK_STATE
 	state &= vf
 	state += opponent
 ;
@@ -855,10 +855,11 @@
 	v1 += 1
 	setopponent
 
-	gamestate := STATE_OPPONENT
-	setstate
-
 	clear
+
+	if pc-charge >= npc-charge then gamestate := STATE_OPPONENT
+	if pc-charge < npc-charge  then gamestate := STATE_TITLE
+	setstate
 ;
 
 : reset-state
@@ -878,6 +879,9 @@
 	v0 := key
 	gamestate := STATE_OPPONENT
 	setstate
+
+	opponent := 0
+	setopponent
 ;
 
 ## OPPONENT SCREEN ###########################################################
