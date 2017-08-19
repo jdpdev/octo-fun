@@ -74,11 +74,10 @@
 
 : main
 	loop
-		opponent := 2
-		setopponent
-
-		gamestate := STATE_OPPONENT
-		setstate
+		#opponent := 2
+		#setopponent
+		#gamestate := STATE_OPPONENT
+		#setstate
 
 		getstate
 		if gamestate == STATE_TITLE		then title-screen
@@ -604,11 +603,24 @@
 	type += 1
 	settype
 
+	px := 0
+	py := random 7
+
+	# 5 of 8 times spawn on correct lane
+	if py < 3 begin
+		gettype
+		py := type
+		py += -1
+		ve := 1
+		py ^= ve
+	else
+		gettype
+		py := type
+		py += -1
+	end
+
 	random-base-input
 	setinput
-
-	px := 0
-	py := random 1
 
 	charge := 3
 ;
@@ -852,20 +864,46 @@
 	x := 10
 	y := 5
 
-	if pc-charge >= npc-charge then draw-you-win
-	if pc-charge < npc-charge  then draw-you-lose
+	if pc-charge >= npc-charge then jump win-result
+	if pc-charge < npc-charge  then jump lose-result
+;
 
-	v0 := key
+: win-result
+	draw-you-win
+
+	if pc-charge == npc-charge 	then v0 := 0
+	if pc-charge > 64			then v0 := 1
+	if pc-charge > 72			then v0 := 2
+	if pc-charge > 80			then v0 := 3
+
+	x := 40
+	y := 20
+	draw-stars
+
+	wait-for-continue
 
 	getopponent
 	v1 += 1
 	setopponent
 
-	clear
-
-	if pc-charge >= npc-charge then gamestate := STATE_OPPONENT
-	if pc-charge < npc-charge  then gamestate := STATE_TITLE
+	gamestate := STATE_OPPONENT
 	setstate
+;
+
+: lose-result
+	draw-you-lose
+
+	wait-for-continue
+
+	gamestate := STATE_TITLE
+	setstate
+;
+
+: wait-for-continue
+	loop
+		v0 := key
+		if v0 == 0xA then return
+	again
 ;
 
 : reset-state
@@ -1524,6 +1562,37 @@
 0x62 0xBC 0x42 0x00 0x00 0x00 0x00 0xBC 
 0x66 0x40 0x40 0x49 0x56 0x62 0x42 0x62 
 0xBC 0x42 0x00 0x00 0x00 0x00 
+
+: emptystar
+0x01 0x00 0x01 0x00 0x03 0x80 0x02 0x80 
+0x04 0x40 0x04 0x40 0xF8 0x3E 0x40 0x04 
+0x20 0x08 0x10 0x10 0x08 0x20 0x09 0x20 
+0x12 0x90 0x24 0x48 0x78 0x3C 0x00 0x00  
+
+: filledstar
+0x01 0x00 0x01 0x00 0x03 0x80 0x03 0x80 
+0x07 0xC0 0x07 0xC0 0xFF 0xFE 0x7F 0xFC 
+0x3F 0xF8 0x1F 0xF0 0x0F 0xE0 0x0F 0xE0 
+0x1E 0xF0 0x3C 0x78 0x78 0x3C 0x00 0x00 
+
+# draw a group of stars starting at x,y
+# v0 is how many to fill
+: draw-stars
+	vd := 0
+
+	loop
+		if vd < v0 then i := filledstar
+		if vd >= v0 then i := emptystar
+
+		plane 2
+		sprite x y 0
+		x += 16
+		vd += 1
+
+		while vd != 3
+	again
+;
+
 
 ## MEMORY ####################################################################
 
