@@ -653,7 +653,10 @@
 ;
 
 : goto-factory-jump-table
-	level4
+	getopponent
+	v0 := opponent
+	v0 <<= v0
+	jump0 jump-tables
 ;
 
 : jump-tables
