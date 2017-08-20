@@ -69,6 +69,7 @@
 :const HIT_SPOT_MIN 		55
 :const HIT_SPOT_MAX 		67
 :const DECISION_X			40
+:const DECISION_X_RIGHT		87
 
 :const PLAYER_X				96
 :const CHARACTER_Y			33
@@ -78,7 +79,7 @@
 
 : main
 	loop
-		opponent := 1
+		opponent := 9
 		setopponent
 		gamestate := STATE_OPPONENT
 		setstate
@@ -590,6 +591,7 @@
 : build-std-note-sprite
 	getinput
 	if input == 0x0 then i := note-simple-question
+	if input == 0xB then i := note-simple-question
 	if input == 0x7 then i := note-simple-a
 	if input == 0x8 then i := note-simple-s
 	if input == 0x9 then i := note-simple-d
@@ -604,6 +606,7 @@
 : build-double-note-sprite
 	getinput
 	if input == 0x0 then i := note-double-question
+	if input == 0xB then i := note-double-question
 	if input == 0x7 then i := note-double-a
 	if input == 0x8 then i := note-double-s
 	if input == 0x9 then i := note-double-d
@@ -628,6 +631,16 @@
 	jump0 jump-behaviors
 ;
 
+:macro is-oppo-note A {
+	getinput
+	A := 0
+	if input == 0x4 then A := 1
+	if input == 0x5 then A := 1
+	if input == 0x6 then A := 1
+	if input == 0xD then A := 1
+	if input == 0xB then A := 1
+}
+
 : jump-behaviors
 	return 
 	return					# type 0 does nothing
@@ -646,31 +659,44 @@
 	v0 := v2		# restore the counter
 
 	# kill when off-screen
-	if px >= 68 then note-self-kill
+	is-oppo-note v2
+
+	if v2 == 0 begin if px >= 68 then note-self-kill end
+	if v2 == 1 begin if px <= 52 then note-self-kill end
 ;
 
 # A standard note that doesn't reveal its input until the last moment
 : std-question-behavior
 	v0 := v2		# restore the counter
 
-	if px != DECISION_X then return
+	is-oppo-note v3
+	if v3 == 0 then v3 := DECISION_X
+	if v3 == 1 then v3 := DECISION_X_RIGHT
+
+	if px != v3 then return
 
 	# convert to standard note
-	random-base-input
+	is-oppo-note v3
+	if v3 == 0 then random-base-input
+	if v3 == 1 then random-flipped-input
 	setinput
 
 	gettype
 	type += -2
 	settype
 
-	v0 := v2		# restore the counter
+	v0 := v2
 ;
 
 # A note that doesn't show its lane until the last moment
 : split-behavior
 	v0 := v2
 
-	if px != DECISION_X then return
+	is-oppo-note v3
+	if v3 == 0 then v3 := DECISION_X
+	if v3 == 1 then v3 := DECISION_X_RIGHT
+
+	if px != v3 then return
 
 	gettype
 	type += -4
@@ -685,9 +711,15 @@
 : split-question-behavior
 	v0 := v2
 
-	if px != DECISION_X then return
+	is-oppo-note v3
+	if v3 == 0 then v3 := DECISION_X
+	if v3 == 1 then v3 := DECISION_X_RIGHT
 
-	random-base-input
+	if px != v3 then return
+
+	is-oppo-note v3
+	if v3 == 0 then random-base-input
+	if v3 == 1 then random-flipped-input
 	setinput
 
 	gettype
@@ -827,6 +859,18 @@
 ;
 
 : jump-tables
+	jump level1
+	jump level2
+	jump level3
+	jump level4
+	jump level5
+	jump level6
+	jump level1
+	jump level2
+	jump level3
+	jump level4
+	jump level5
+	jump level6
 	jump level1
 	jump level2
 	jump level3
@@ -1063,6 +1107,38 @@
 	npc-charge := 0
 ;
 
+: draw-you-lose
+	j := 64
+	plane 3
+	i := youlosewin-label
+	sprite x y 0
+
+	x += 15
+	i += j
+	sprite x y 0
+
+	x += 15
+	i += j
+	sprite x y 0
+;
+
+: draw-you-win
+	j := 64
+	plane 3
+	i := youlosewin-label
+	sprite x y 0
+
+	x += 14
+	i += j
+	i += j
+	i += j
+	sprite x y 0
+
+	x += 16
+	i += j
+	sprite x y 0
+;
+
 ## TITLE SCREEN ##############################################################
 
 : title-screen
@@ -1184,8 +1260,6 @@
 
 		va += 8
 	end
-
-	:breakpoint gothicnum
 
 	#if v9 != 0 begin
 		v1 := v9
@@ -1633,7 +1707,7 @@
 
 : note-simple-q 0x7E 0xE7 0xDB 0xDB 0xE3 0xFB 0xFF 0x7E
 : note-simple-w 0x7E 0xFF 0xDD 0xD5 0xD5 0xC1 0xFF 0x7E
-: note-simple-e 0x7E 0xC3 0xDF 0xC7 0xDF 0xDF 0xC3 0x7E
+: note-simple-e 0x7E 0xFF 0xC3 0xD3 0xCF 0xC3 0xFF 0x7E
 : note-simple-r 0x7E 0xFF 0xC7 0xDB 0xD7 0xDB 0xFF 0x7E
 
 : note-double-a	0x7E 0xE7 0xDB 0xC3 0xDB 0xDB 0xFF 0x7E 0x7E 0xE7 0xDB 0xC3 0xDB 0xDB 0xFF 0x7E
@@ -1688,38 +1762,6 @@
 0x22 0x40 0x22 0x40 0x42 0x40 0x04 0x80 
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
-
-: draw-you-lose
-	j := 64
-	plane 3
-	i := youlosewin-label
-	sprite x y 0
-
-	x += 15
-	i += j
-	sprite x y 0
-
-	x += 15
-	i += j
-	sprite x y 0
-;
-
-: draw-you-win
-	j := 64
-	plane 3
-	i := youlosewin-label
-	sprite x y 0
-
-	x += 14
-	i += j
-	i += j
-	i += j
-	sprite x y 0
-
-	x += 16
-	i += j
-	sprite x y 0
-;
 
 : chipjoust-title
 0x3C 0x00 0x7E 0x40 0xF3 0x28 0xF1 0x34 # CH
