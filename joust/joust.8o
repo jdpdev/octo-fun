@@ -69,7 +69,7 @@
 :const HIT_SPOT_MIN 		55
 :const HIT_SPOT_MAX 		67
 :const DECISION_X			40
-:const DECISION_X_RIGHT		87
+:const DECISION_X_RIGHT		84
 
 :const PLAYER_X				96
 :const CHARACTER_Y			33
@@ -78,12 +78,12 @@
 :const DEFAULT_CHARGE		4
 
 : main
-	loop
-		#opponent := 9
-		#setopponent
-		#gamestate := STATE_OPPONENT
-		#setstate
+	opponent := 10
+	setopponent
+	gamestate := STATE_OPPONENT
+	setstate
 
+	loop
 		getstate
 		if gamestate == STATE_TITLE		then title-screen
 		if gamestate == STATE_OPPONENT	then opponent-screen
@@ -664,7 +664,7 @@
 	is-oppo-note v2
 
 	if v2 == 0 begin if px >= 68 then note-self-kill end
-	if v2 == 1 begin if px <= 52 then note-self-kill end
+	if v2 == 1 begin if px <= 54 then note-self-kill end
 ;
 
 # A standard note that doesn't reveal its input until the last moment
@@ -752,13 +752,19 @@
 : generate-new-note
 	direction := 0
 	getopponent
-	if opponent > 5 then direction := 1
-	if opponent > 11 then direction := 2
+	if opponent > 4 then direction := 1
+	if opponent > 9 then direction := 2
 
 	if direction == 0 then px := 0
 	if direction == 1 then px := 119
 
 	goto-factory-jump-table
+
+	if direction == 2 begin
+		is-oppo-note direction
+		if direction == 1 then px := 119
+		if direction == 0 then px := 0
+	end
 
 	spawn-note
 	set-spawn-timer
@@ -866,13 +872,11 @@
 	jump level3
 	jump level4
 	jump level5
-	jump level6
 	jump level1
 	jump level2
 	jump level3
 	jump level4
 	jump level5
-	jump level6
 	jump level1
 	jump level2
 	jump level3
@@ -911,12 +915,12 @@
 	jump generate-standard-note
 	jump generate-standard-note
 	jump generate-standard-note
-	jump generate-standard-note
-	jump generate-standard-note
 	jump generate-question-note
 	jump generate-question-note
 	jump generate-question-note
 	jump generate-question-note
+	jump generate-question-note
+	jump generate-split-note
 	jump generate-split-note
 	jump generate-split-note
 	jump generate-split-note
@@ -934,9 +938,6 @@
 	jump generate-standard-note
 	jump generate-standard-note
 	jump generate-standard-note
-	jump generate-standard-note
-	jump generate-standard-note
-	jump generate-question-note
 	jump generate-question-note
 	jump generate-question-note
 	jump generate-question-note
@@ -944,6 +945,9 @@
 	jump generate-split-note
 	jump generate-split-note
 	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-note
+	jump generate-split-question-note
 	jump generate-split-question-note
 	jump generate-split-question-note
 ;
@@ -959,14 +963,14 @@
 	jump generate-question-note
 	jump generate-question-note
 	jump generate-question-note
-	jump generate-question-note
-	jump generate-question-note
 	jump generate-split-note
 	jump generate-split-note
 	jump generate-split-note
 	jump generate-split-note
 	jump generate-split-note
-	jump generate-split-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
 	jump generate-split-question-note
 	jump generate-split-question-note
 	jump generate-split-question-note
@@ -980,16 +984,16 @@
 ;
 
 : jump-level6-table
-	jump generate-standard-note
-	jump generate-question-note
-	jump generate-question-note
-	jump generate-question-note
-	jump generate-split-note
-	jump generate-split-note
-	jump generate-split-note
-	jump generate-split-note
-	jump generate-split-note
-	jump generate-split-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
+	jump generate-split-question-note
 	jump generate-split-question-note
 	jump generate-split-question-note
 	jump generate-split-question-note
