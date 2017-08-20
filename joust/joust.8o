@@ -79,10 +79,10 @@
 
 : main
 	loop
-		opponent := 9
-		setopponent
-		gamestate := STATE_OPPONENT
-		setstate
+		#opponent := 9
+		#setopponent
+		#gamestate := STATE_OPPONENT
+		#setstate
 
 		getstate
 		if gamestate == STATE_TITLE		then title-screen
@@ -98,6 +98,8 @@
 ## MEMORY ####################################################################
 
 : bcd-num 0 0 0
+
+: level-scores 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 
 # allocate in blocks of eight for easy multiplication
 : notes
@@ -1072,6 +1074,11 @@
 	if pc-charge > 72			then v0 := 2
 	if pc-charge > 80			then v0 := 3
 
+	getopponent
+	i := level-scores
+	i += opponent
+	save v0 - v0
+
 	x := 40
 	y := 20
 	draw-stars
@@ -1627,8 +1634,8 @@
 
 	loop
 		i := long star-sprite
-		ve := 32
-		if vd < v0 then i += ve
+		vc := 32
+		if vd < v0 then i += vc
 
 		plane 2
 		sprite x y 0
