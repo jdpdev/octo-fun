@@ -79,10 +79,10 @@
 :const DEFAULT_CHARGE		4
 
 : main
-	opponent := 11
-	setopponent
-	gamestate := STATE_OPPONENT
-	setstate
+	#opponent := 11
+	#setopponent
+	#gamestate := STATE_OPPONENT
+	#setstate
 
 	loop
 		getstate
