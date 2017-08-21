@@ -79,10 +79,10 @@
 :const DEFAULT_CHARGE		4
 
 : main
-	#opponent := 15
-	#setopponent
-	#gamestate := STATE_GAME_OVER
-	#setstate
+	opponent := 11
+	setopponent
+	gamestate := STATE_OPPONENT
+	setstate
 
 	loop
 		getstate
@@ -840,9 +840,9 @@
 	if direction == 0 then input := 0x0
 	if direction == 1 then input := 0xB
 	if direction == 2 begin
-		direction := random 1
-		if direction == 0 then input := 0x0
-		if direction == 1 then input := 0xB
+		v8 := random 1
+		if v8 == 0 then input := 0x0
+		if v8 == 1 then input := 0xB
 	end
 	setinput
 
