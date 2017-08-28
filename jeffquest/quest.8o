@@ -1,0 +1,172 @@
+:alias viewer-count		v4
+:alias viewer-order		v5
+
+:alias px				va
+:alias py				vb
+:alias direction		vc 	# direction wind comes from
+
+:alias x				v1
+:alias y				v2
+
+:const WIND_NORTH		0
+:const WIND_EAST		1
+:const WIND_SOUTH		2
+:const WIND_WEST		3
+
+:const SHED_LEFT		56
+:const SHED_TOP			24
+:const SHED_RIGHT		72
+:const SHED_BOTTOM		40
+
+:const SHED_LEFT_JEFF	51	# the left and top bounds of the shed from the perspective of jeff
+:const SHED_TOP_JEFF	14
+
+: main
+	hires
+
+	px := SHED_RIGHT
+	py := SHED_TOP
+	px += 2
+
+	draw-shed
+	draw-jeff
+	draw-viewers
+
+	loop
+		read-input
+	again
+;
+
+: read-input
+	v0 := 0x5
+	if v0 key then jump move-up
+
+	v0 := 0x7
+	if v0 key then jump move-left
+
+	v0 := 0x8
+	if v0 key then jump move-down
+
+	v0 := 0x9
+	if v0 key then jump move-right
+;
+
+: move-up
+	x := px
+	y := py
+	y += -1
+	if y == 255 then y := 0
+
+	if y == py then return
+
+	check-vert-shed-collision
+	if v3 == 1 then return
+
+	draw-jeff
+	py := y
+	draw-jeff
+;
+
+: move-down
+	x := px
+	y := py
+	y += 1
+	if y == 55 then y := 54
+
+	if y == py then return
+
+	check-vert-shed-collision
+	if v3 == 1 then return
+
+	draw-jeff
+	py := y
+	draw-jeff
+;
+
+: move-left
+	y := py
+	x := px
+	x += -1
+	if x == 255 then x := 0
+
+	if x == px then return
+
+	check-horiz-shed-collision
+	if v3 == 1 then return
+
+	draw-jeff
+	px := x
+	draw-jeff
+;
+
+: move-right
+	y := py
+	x := px
+	x += 1
+	if x == 124 then x := 123
+
+	if x == px then return
+
+	check-horiz-shed-collision
+	if v3 == 1 then return
+
+	draw-jeff
+	px := x
+	draw-jeff
+;
+
+# check collision with the shed along x axis and put the result in v3
+: check-horiz-shed-collision
+	v3 := 0
+	if x < SHED_LEFT_JEFF 	then return
+	if x > SHED_RIGHT		then return
+	if y <= SHED_TOP_JEFF	then return
+	if y >= SHED_BOTTOM		then return
+	#:breakpoint check-horiz-shed-collision
+
+	v3 := 1
+;
+
+# check collision with the shed along y axis and put the result in v3
+: check-vert-shed-collision
+	v3 := 0
+	if y <= SHED_TOP_JEFF	then return
+	if y > SHED_BOTTOM		then return
+	if x < SHED_LEFT_JEFF	then return
+	if x > SHED_RIGHT		then return
+
+	v3 := 1
+;
+
+: draw-shed
+	x := SHED_LEFT
+	y := SHED_TOP
+	i := shed
+
+	plane 2
+	sprite x y 0
+;
+
+: draw-jeff
+	i := jeff-left
+	plane 2
+	sprite px py 10
+;
+
+: draw-viewers
+	plane 1
+	x := 1
+	y := 53
+	i := viewer
+	sprite x y 10
+;
+
+: shed
+0x00 0x00 0x00 0x00 0x01 0xF8 0x07 0xFC 
+0x0F 0xFA 0x11 0xF7 0x20 0xEF 0x40 0x5F 
+0x80 0x3F 0x80 0x3F 0x80 0x3F 0x80 0x3E 
+0x80 0x3C 0x80 0x38 0x80 0x30 0xFF 0xE0 
+
+: jeff-left		0x20 0x50 0x50 0xA0 0xF0 0x28 0x20 0x50 0x50 0x50
+: jeff-right	0x20 0x50 0x50 0x28 0x78 0xA0 0x20 0x50 0x50 0x50
+: viewer		0x7E 0x81 0xA5 0x81 0x42 0x3C 0x7E 0xFF 0xFF 0xFF
