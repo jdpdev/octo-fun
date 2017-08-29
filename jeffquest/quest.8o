@@ -1,5 +1,6 @@
-:alias viewer-count		v5
-:alias viewer-order		v6
+:alias viewer-count		v5	# viewer count in the current order, [0-99]
+:alias viewer-order		v6	# one tick for every 100 viewers
+:alias viewer-rollover	v7	# incremental viewer step
 
 :alias px				va
 :alias py				vb
@@ -38,6 +39,7 @@
 
 	loop
 		read-input
+		update-viewers
 	again
 ;
 
@@ -142,6 +144,24 @@
 	v3 := 1
 ;
 
+# update the viewer count
+: update-viewers
+	get-wind-force
+
+	viewer-rollover += wind-force
+	if vf == 1 begin
+		draw-viewers
+		viewer-count += 1
+
+		if viewer-count == 100 begin
+			viewer-count := 0
+			viewer-order += 1
+		end
+		draw-viewers
+	end 
+;
+
+# calculate the force of the wind and save to v3
 : get-wind-force
 	if direction == WIND_NORTH	then jump calculate-north-wind-force
 	if direction == WIND_EAST	then jump calculate-east-wind-force
@@ -223,7 +243,32 @@
 	y := 53
 	i := viewer
 	sprite x y 10
+
+	draw-viewer-digits
 ;
+
+: draw-viewer-digits
+	i := digits
+	bcd viewer-count
+	load v2
+
+	i := hex v0
+	v8 := 12
+	v9 := 58
+	sprite v8 v9 5
+
+	i := hex v1
+	v8 := 17
+	v9 := 58
+	sprite v8 v9 5
+
+	i := hex v2
+	v8 := 22
+	v9 := 58
+	sprite v8 v9 5
+;
+
+: digits 0 0 0
 
 : shed
 0x00 0x00 0x00 0x00 0x01 0xF8 0x07 0xFC 
