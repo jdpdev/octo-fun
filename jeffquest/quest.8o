@@ -1,5 +1,5 @@
-:alias viewer-count		v4
-:alias viewer-order		v5
+:alias viewer-count		v5
+:alias viewer-order		v6
 
 :alias px				va
 :alias py				vb
@@ -7,6 +7,7 @@
 
 :alias x				v1
 :alias y				v2
+:alias wind-force		v3
 
 :const WIND_NORTH		0
 :const WIND_EAST		1
@@ -20,13 +21,16 @@
 
 :const SHED_LEFT_JEFF	51	# the left and top bounds of the shed from the perspective of jeff
 :const SHED_TOP_JEFF	14
+:const SHED_BOTTOM_JEFF	30
 
 : main
 	hires
 
-	px := SHED_RIGHT
+	px := SHED_LEFT_JEFF
 	py := SHED_TOP
-	px += 2
+	px += -2
+
+	direction := WIND_EAST
 
 	draw-shed
 	draw-jeff
@@ -53,76 +57,76 @@
 
 : move-up
 	x := px
-	y := py
-	y += -1
-	if y == 255 then y := 0
+	v0 := py
+	v0 += -1
+	if v0 == 255 then v0 := 0
 
-	if y == py then return
+	if v0 == py then return
 
 	check-vert-shed-collision
 	if v3 == 1 then return
 
 	draw-jeff
-	py := y
+	py := v0
 	draw-jeff
 ;
 
 : move-down
 	x := px
-	y := py
-	y += 1
-	if y == 55 then y := 54
+	v0 := py
+	v0 += 1
+	if v0 == 55 then v0 := 54
 
-	if y == py then return
+	if v0 == py then return
 
 	check-vert-shed-collision
 	if v3 == 1 then return
 
 	draw-jeff
-	py := y
+	py := v0
 	draw-jeff
 ;
 
 : move-left
+	#:breakpoint move-left
 	y := py
-	x := px
-	x += -1
-	if x == 255 then x := 0
+	v0 := px
+	v0 += -1
+	if v0 == 255 then v0 := 0
 
-	if x == px then return
+	if v0 == px then return
 
 	check-horiz-shed-collision
 	if v3 == 1 then return
 
 	draw-jeff
-	px := x
+	px := v0
 	draw-jeff
 ;
 
 : move-right
 	y := py
-	x := px
-	x += 1
-	if x == 124 then x := 123
+	v0 := px
+	v0 += 1
+	if v0 == 124 then v0 := 123
 
-	if x == px then return
+	if v0 == px then return
 
 	check-horiz-shed-collision
 	if v3 == 1 then return
 
 	draw-jeff
-	px := x
+	px := v0
 	draw-jeff
 ;
 
 # check collision with the shed along x axis and put the result in v3
 : check-horiz-shed-collision
 	v3 := 0
-	if x < SHED_LEFT_JEFF 	then return
-	if x > SHED_RIGHT		then return
+	if v0 < SHED_LEFT_JEFF 	then return
+	if v0 > SHED_RIGHT		then return
 	if y <= SHED_TOP_JEFF	then return
 	if y >= SHED_BOTTOM		then return
-	#:breakpoint check-horiz-shed-collision
 
 	v3 := 1
 ;
@@ -130,12 +134,63 @@
 # check collision with the shed along y axis and put the result in v3
 : check-vert-shed-collision
 	v3 := 0
-	if y <= SHED_TOP_JEFF	then return
-	if y > SHED_BOTTOM		then return
+	if v0 <= SHED_TOP_JEFF	then return
+	if v0 > SHED_BOTTOM		then return
 	if x < SHED_LEFT_JEFF	then return
 	if x > SHED_RIGHT		then return
 
 	v3 := 1
+;
+
+: get-wind-force
+	if direction == WIND_NORTH	then jump calculate-north-wind-force
+	if direction == WIND_EAST	then jump calculate-east-wind-force
+	if direction == WIND_SOUTH	then jump calculate-south-wind-force
+	if direction == WIND_WEST	then jump calculate-west-wind-force
+;
+
+: calculate-north-wind-force
+
+;
+
+: calculate-east-wind-force
+	v4 := 0
+	
+	if px > SHED_LEFT begin
+		v3 := SHED_LEFT
+		ve := px
+		ve -= v3
+		v4 += ve
+		v4 += 10
+	else
+		if py < SHED_TOP begin 
+			v3 := SHED_TOP
+			v4 := py
+			v4 =- v3
+		end
+
+		if py > SHED_BOTTOM_JEFF begin 
+			v3 := SHED_BOTTOM_JEFF
+			v4 := py
+			v4 -= v3
+		end
+	end
+
+	calculate-force
+	wind-force := v4
+;
+
+: calculate-south-wind-force
+
+;
+
+: calculate-west-wind-force
+
+;
+
+# calculate the resulting force from how uncovered jeff is, set in v4
+: calculate-force
+	#if v4 == 0 then return
 ;
 
 : draw-shed
@@ -151,6 +206,15 @@
 	i := jeff-left
 	plane 2
 	sprite px py 10
+
+	if direction == WIND_EAST begin
+		x := px
+		get-wind-force
+		x -= wind-force
+
+		plane 1
+		sprite x py 10
+	end
 ;
 
 : draw-viewers
