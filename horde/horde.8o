@@ -1,0 +1,92 @@
+:const PLAYER_TURN	2
+:const AI_TURN		3
+
+:const FACING_UP	0
+:const FACING_RIGHT 1
+:const FACING_DOWN	2
+:const FACING_LEFT	3
+
+:alias game-state	vd	# persists across states
+
+:alias x			vb
+:alias y			vc
+:alias facing		va
+
+: main
+	hires
+	x := 64
+	y := 32
+	draw-player
+
+	loop
+		read-player-input
+	again
+;
+
+: read-player-input
+	v0 := key
+	v0 <<= v0
+	jump0 process-player-input
+;
+
+: process-player-input
+	return 			# x
+	return			# 1
+	return			# 2
+	return			# 3
+	return			# q
+	jump move-up		# w
+	return		# e
+	jump move-left		# a
+	jump move-down		# s
+	jump move-right		# d
+	return		# z
+	return		# c
+	return		# 4
+	return		# r
+	return		# f
+	return		# v
+;
+
+:macro move X Y DIR {
+	draw-player
+	x += X
+	y += Y
+	facing := DIR
+	draw-player
+}
+
+: move-up
+	move 0 -1 FACING_UP
+;
+
+: move-down
+	move 0 1 FACING_DOWN
+;
+
+: move-left
+	move -1 0 FACING_LEFT
+;
+
+: move-right
+	move 1 0 FACING_RIGHT
+;
+
+: draw-player
+	i := player-sprite
+	v0 := 0
+
+	if facing == FACING_RIGHT 	then v0 := 5
+	if facing == FACING_DOWN 	then v0 := 10
+	if facing == FACING_LEFT 	then v0 := 15
+
+	i += v0
+
+	sprite x y 4
+;
+
+: player-sprite	
+	0x00 0x20 0x60 0x00 0x00 	# face up
+	0x00 0x40 0x60 0x00 0x00	# face right
+	0x00 0x60 0x40 0x00 0x00	# face down
+	0x00 0x60 0x20 0x00 0x00	# face left
