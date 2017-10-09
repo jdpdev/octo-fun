@@ -1,3 +1,6 @@
+:const AI_COUNT		10
+:const SPRITE_SIZE	2
+
 :const PLAYER_TURN	2
 :const AI_TURN		3
 
@@ -6,20 +9,28 @@
 :const FACING_DOWN	2
 :const FACING_LEFT	3
 
-:alias game-state	vd	# persists across states
+:const PLAYER_X		32
+:const PLAYER_Y		16
 
-:alias x			vb
-:alias y			vc
-:alias facing		va
+:alias iterator		v1
+
+:alias game-state	vd	# persists across states
+:alias facing		vc
+
+:alias ai-type		v7
+:alias x			v8
+:alias y			v9
+:alias hp			va
+:alias attack		vb
 
 : main
 	hires
-	x := 64
-	y := 32
 	draw-player
+	add-ai
 
 	loop
 		read-player-input
+		ai-turn
 	again
 ;
 
@@ -50,8 +61,6 @@
 
 :macro move X Y DIR {
 	draw-player
-	x += X
-	y += Y
 	facing := DIR
 	draw-player
 }
@@ -73,20 +82,159 @@
 ;
 
 : draw-player
+	v1 := PLAYER_X
+	v2 := PLAYER_Y
+	v1 <<= v1
+	v2 <<= v2
+
 	i := player-sprite
 	v0 := 0
 
-	if facing == FACING_RIGHT 	then v0 := 5
-	if facing == FACING_DOWN 	then v0 := 10
-	if facing == FACING_LEFT 	then v0 := 15
+	if facing == FACING_RIGHT 	then v0 := 2
+	if facing == FACING_DOWN 	then v0 := 4
+	if facing == FACING_LEFT 	then v0 := 6
 
 	i += v0
 
-	sprite x y 4
+	sprite v1 v2 SPRITE_SIZE
 ;
 
+: add-ai
+	iterator := 0
+	load-ai
+	draw-ai
+;
+
+# loop through ais to step each
+: ai-turn
+	iterator := 0
+
+	loop
+		process-ai
+		iterator += 1
+		while iterator != AI_COUNT
+	again
+;
+
+# convert an index into memory offset
+:macro offset-index IN OUT {
+	OUT := IN
+	OUT <<= OUT
+	OUT <<= OUT
+	OUT <<= OUT
+}
+
+: load-ai
+	offset-index iterator v2
+	i := ais
+	i += v2
+	load ai-type - attack
+;
+
+: save-ai
+	offset-index iterator v2
+	i := ais
+	i += v2
+	save ai-type - attack
+;
+
+# take a single ai's turn
+: process-ai
+	load-ai
+	v0 := ai-type
+	v0 <<= v0
+	jump0 process-ai-type
+;
+
+: process-ai-type
+	return
+	jump simple-ai-type
+;
+
+: simple-ai-type
+	draw-ai
+	move-to-player
+	draw-ai
+	
+	save-ai
+;
+
+# step the x,y towards the player
+: move-to-player
+
+	# x
+	v0 := 0b11100000
+	ve := x
+	ve &= v0
+
+	# x to the left
+	if ve == 0 begin
+		x += 1
+
+	# x to the right
+	else
+		if ve != PLAYER_X begin
+			x += -1
+		end
+	end
+
+	# y
+	v0 := 0b11110000
+	ve := y
+	ve &= v0
+
+	# y above
+	if ve == 0 begin
+		y += 1
+	# y below
+	else
+		if ve != PLAYER_Y begin
+			y += -1
+		end
+	end
+;
+
+: draw-ai
+	i := ai-sprites
+	v0 := ai-type
+	v0 <<= v0
+	i += v0
+
+	v2 := x
+	v3 := y
+	v2 <<= v2
+	v3 <<= v3
+
+	sprite x y SPRITE_SIZE
+;
+
+: ai-sprite-offset
+	
+;
+
+: sprite-simple-ai
+
+;
+
+# type, x, y, hp, attack, n, n, n
+: ais
+1 1 1 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+
 : player-sprite	
-	0x00 0x20 0x60 0x00 0x00 	# face up
-	0x00 0x40 0x60 0x00 0x00	# face right
-	0x00 0x60 0x40 0x00 0x00	# face down
-	0x00 0x60 0x20 0x00 0x00	# face left
+	0x40 0xC0 	# face up
+	0x80 0xC0	# face right
+	0xC0 0x80	# face down
+	0xC0 0x40	# face left
+
+: ai-sprites
+	0x00 0x00	# no type
+	0xC0 0xC0	# simple
