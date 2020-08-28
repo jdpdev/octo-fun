@@ -310,7 +310,7 @@
 	set-debris-alive v0
 
 	debrisX := DEBRIS_SPAWN_X
-	debrisY := 10
+	debrisY := 32
 	debrisAccumulate := 0
 
 	i := debris
@@ -338,7 +338,12 @@
 	v0 := 200
 	debrisAccumulate += v0
 	
-	if vf == 1 then jump do-move-debris
+	if vf == 1 then jump can-move-debris
+;
+
+: can-move-debris
+	check-horiz-shed-collision debrisX debrisY do-move-debris
+	kill-debris
 ;
 
 : do-move-debris
