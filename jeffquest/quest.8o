@@ -4,13 +4,13 @@
 
 :alias px				va
 :alias py				vb
-:alias wind-force		v3
 :alias direction		vc 	# direction wind comes from
 :alias next-spawn		vd
 
 # ### stuff that's safe to use for multiple things ###
 :alias x				v1
 :alias y				v2
+:alias wind-force		v3
 
 :alias debris-data		v1
 :alias debrisX			v2
@@ -58,6 +58,16 @@
 :const SHED_LEFT_JEFF	52	
 :const SHED_TOP_JEFF	16
 :const SHED_BOTTOM_JEFF	30
+
+:macro get-jeff-right out {
+	out := px
+	out += 5
+}
+
+:macro get-jeff-bottom out {
+	out := py
+	out += 10
+}
 
 :const DEBRIS_SPAWN_X	120
 
@@ -160,6 +170,22 @@
 	if tx > SHED_RIGHT		then jump out
 	if ty <= SHED_TOP_JEFF	then jump out
 	if ty >= SHED_BOTTOM	then jump out
+}
+
+:macro check-jeff-collision x y temp out {
+	get-jeff-right temp
+	if x > temp	then jump out
+
+	temp := x
+	temp += 7
+	if temp < px then jump out
+
+	temp := y
+	temp += 5
+	if temp < py then jump out
+
+	get-jeff-bottom temp
+	if y > temp	then jump out
 }
 
 : set-jeff-position
@@ -303,7 +329,7 @@
 	set-debris-alive v0
 
 	debrisX := DEBRIS_SPAWN_X
-	debrisY := 32
+	debrisY := 10
 	debrisAccumulate := 0
 
 	i := debris
@@ -331,11 +357,16 @@
 	v0 := 200
 	debrisAccumulate += v0
 	
-	if vf == 1 then jump can-move-debris
+	if vf == 1 then jump check-debris-against-shed
 ;
 
-: can-move-debris
-	check-shed-collision debrisX debrisY do-move-debris
+: check-debris-against-shed
+	check-shed-collision debrisX debrisY check-debris-against-jeff
+	kill-debris
+;
+
+: check-debris-against-jeff
+	check-jeff-collision debrisX debrisY v0 do-move-debris
 	kill-debris
 ;
 
@@ -425,9 +456,7 @@
 0x80 0x3C 0x80 0x38 0x80 0x30 0xFF 0xE0
 
 : board
-0x07 0x3E 0xF0 0xC0 0x00 0x00 0x00 0x00 0x00 0x00
-0x00 0x00 0x00 0x00 0x00 0x07 0x3E 0xF0 0xC0 0x00
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+0x03 0x07 0x1E 0x78 0xE0 0xC0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x03 0x07 0x1E 0x78 0xE0 0xC0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
 
 : tire
 0x38 0x5C 0xB6 0xB6 0x5C 0x38 0x00 0x00 0x00 0x00
