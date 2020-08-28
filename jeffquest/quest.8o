@@ -4,13 +4,46 @@
 
 :alias px				va
 :alias py				vb
+:alias wind-force		v3
 :alias direction		vc 	# direction wind comes from
-:alias game-state		vd
+:alias next-spawn		vd
 
+# ### stuff that's safe to use for multiple things ###
 :alias x				v1
 :alias y				v2
-:alias wind-force		v3
 
+:alias debris-data		v1
+:alias debrisX			v2
+:alias debrisY			v3
+:alias debrisAccumulate	v4
+
+:const MASK_DEBRIS_ALIVE 0b00000001
+:const MASK_DEBRIS_DEAD  0b11111110
+:const MASK_DEBRIS_TYPE  0b00000110
+
+:macro get-debris-alive target temp {
+	target := debris-data
+	temp := MASK_DEBRIS_ALIVE
+	target &= temp
+}
+
+:macro set-debris-alive temp {
+	temp := MASK_DEBRIS_ALIVE
+	debris-data |= temp
+}
+
+:macro set-debris-dead temp {
+	temp := MASK_DEBRIS_DEAD
+	debris-data &= temp
+}
+
+:macro get-debris-type target temp {
+	target := debris-data
+	target &= MASK_DEBRIS_TYPE
+	target >>= target
+}
+
+# #########
 :const WIND_NORTH		0
 :const WIND_EAST		1
 :const WIND_SOUTH		2
@@ -25,16 +58,20 @@
 :const SHED_TOP_JEFF	14
 :const SHED_BOTTOM_JEFF	30
 
+:const DEBRIS_SPAWN_X	120
+
 : main
-	game-state := 0
-
 	title-screen
-
-	#loop
-	#	if game-state == 0 then title-screen
-	#	if game-state == 1 then game-loop
-	#again
 ;
+
+## MEMORY ####################################################################
+: debris 
+0	# data
+0	# x
+0	# y
+0 	# accumulator
+
+## THE GAME ##################################################################
 
 : title-screen
 	x := 11
@@ -89,12 +126,14 @@
 	px += -2
 
 	direction := WIND_EAST
+	next-spawn := 0
 
 	draw-shed
 	draw-jeff
 	draw-viewers
 
 	loop
+		update-debris
 		read-input
 		update-viewers
 	again
@@ -270,6 +309,70 @@
 	#if v4 == 0 then return
 ;
 
+: update-debris
+	i := debris
+	load debris-data - debrisAccumulate
+
+	#:breakpoint update-debris
+	get-debris-alive ve v0
+	if ve == 0 then jump check-spawn-debris
+
+	step-debris
+;
+
+: check-spawn-debris
+	if next-spawn == 0 then jump spawn-debris
+	next-spawn -= 1
+;
+
+: spawn-debris
+	debris-data := 0
+	set-debris-alive v0
+
+	debrisX := DEBRIS_SPAWN_X
+	debrisY := 10
+	debrisAccumulate := 0
+
+	i := debris
+	save debris-data - debrisAccumulate
+
+	draw-debris
+;
+
+: draw-debris
+	i := board
+	plane 3
+	sprite debrisX debrisY 15
+;
+
+: step-debris
+	move-debris
+
+	i := debris
+	save debris-data - debrisAccumulate
+;
+
+: move-debris
+	if debrisX == 0 then jump kill-debris
+
+	v0 := 200
+	debrisAccumulate += v0
+	
+	if vf == 1 then jump do-move-debris
+;
+
+: do-move-debris
+	draw-debris
+	debrisX += -1
+	draw-debris
+;
+
+: kill-debris 
+	set-debris-dead v0
+	next-spawn := 30
+	draw-debris
+;
+
 : draw-shed
 	x := SHED_LEFT
 	y := SHED_TOP
@@ -341,7 +444,17 @@
 0x00 0x00 0x00 0x00 0x01 0xF8 0x07 0xFC 
 0x0F 0xFA 0x11 0xF7 0x20 0xEF 0x40 0x5F 
 0x80 0x3F 0x80 0x3F 0x80 0x3F 0x80 0x3E 
-0x80 0x3C 0x80 0x38 0x80 0x30 0xFF 0xE0 
+0x80 0x3C 0x80 0x38 0x80 0x30 0xFF 0xE0
+
+: board
+0x07 0x3E 0xF0 0xC0 0x00 0x00 0x00 0x00 0x00 0x00
+0x00 0x00 0x00 0x00 0x00 0x07 0x3E 0xF0 0xC0 0x00
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: tire
+0x38 0x5C 0xB6 0xB6 0x5C 0x38 0x00 0x00 0x00 0x00
+0x00 0x00 0x00 0x00 0x00 0x38 0x5C 0xB6 0xB6 0x5C
+0x38 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
 
 : jeff-left		0x20 0x50 0x50 0xA0 0xF0 0x28 0x20 0x50 0x50 0x50
 : jeff-right	0x20 0x50 0x50 0x28 0x78 0xA0 0x20 0x50 0x50 0x50
