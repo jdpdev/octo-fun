@@ -54,8 +54,9 @@
 :const SHED_RIGHT		72
 :const SHED_BOTTOM		40
 
-:const SHED_LEFT_JEFF	51	# the left and top bounds of the shed from the perspective of jeff
-:const SHED_TOP_JEFF	14
+# the left and top bounds of the shed from the perspective of jeff
+:const SHED_LEFT_JEFF	52	
+:const SHED_TOP_JEFF	16
 :const SHED_BOTTOM_JEFF	30
 
 :const DEBRIS_SPAWN_X	120
@@ -153,20 +154,12 @@
 	if v0 key then jump move-right
 ;
 
-# check collision with the shed along x axis at a point and jump to out if no collision
-:macro check-horiz-shed-collision tx ty out {
+# check collision with the shed at a point and jump to out if no collision
+:macro check-shed-collision tx ty out {
 	if tx < SHED_LEFT_JEFF 	then jump out
 	if tx > SHED_RIGHT		then jump out
 	if ty <= SHED_TOP_JEFF	then jump out
 	if ty >= SHED_BOTTOM	then jump out
-}
-
-# check collision with the shed along y axis at a point and jump to out if no collision
-:macro check-vert-shed-collision tx ty out {
-	if ty <= SHED_TOP_JEFF	then jump out
-	if ty > SHED_BOTTOM		then jump out
-	if tx < SHED_LEFT_JEFF	then jump out
-	if tx > SHED_RIGHT		then jump out
 }
 
 : set-jeff-position
@@ -184,7 +177,7 @@
 
 	if x == px then return
 
-	check-horiz-shed-collision x y set-jeff-position
+	check-shed-collision x y set-jeff-position
 ;
 
 : move-right
@@ -195,7 +188,7 @@
 
 	if x == px then return
 
-	check-horiz-shed-collision x y set-jeff-position
+	check-shed-collision x y set-jeff-position
 ;
 
 : move-up
@@ -206,7 +199,7 @@
 
 	if y == py then return
 
-	check-vert-shed-collision x y set-jeff-position
+	check-shed-collision x y set-jeff-position
 ;
 
 : move-down
@@ -217,7 +210,7 @@
 
 	if y == py then return
 
-	check-vert-shed-collision x y set-jeff-position
+	check-shed-collision x y set-jeff-position
 ;
 
 # update the viewer count
@@ -342,7 +335,7 @@
 ;
 
 : can-move-debris
-	check-horiz-shed-collision debrisX debrisY do-move-debris
+	check-shed-collision debrisX debrisY do-move-debris
 	kill-debris
 ;
 
