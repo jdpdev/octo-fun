@@ -153,91 +153,71 @@
 	if v0 key then jump move-right
 ;
 
-: move-up
-	x := px
-	v0 := py
-	v0 += -1
-	if v0 == 255 then v0 := 0
+# check collision with the shed along x axis at a point and jump to out if no collision
+:macro check-horiz-shed-collision tx ty out {
+	if tx < SHED_LEFT_JEFF 	then jump out
+	if tx > SHED_RIGHT		then jump out
+	if ty <= SHED_TOP_JEFF	then jump out
+	if ty >= SHED_BOTTOM	then jump out
+}
 
-	if v0 == py then return
+# check collision with the shed along y axis at a point and jump to out if no collision
+:macro check-vert-shed-collision tx ty out {
+	if ty <= SHED_TOP_JEFF	then jump out
+	if ty > SHED_BOTTOM		then jump out
+	if tx < SHED_LEFT_JEFF	then jump out
+	if tx > SHED_RIGHT		then jump out
+}
 
-	check-vert-shed-collision
-	if v3 == 1 then return
-
+: set-jeff-position
 	draw-jeff
-	py := v0
-	draw-jeff
-;
-
-: move-down
-	x := px
-	v0 := py
-	v0 += 1
-	if v0 == 55 then v0 := 54
-
-	if v0 == py then return
-
-	check-vert-shed-collision
-	if v3 == 1 then return
-
-	draw-jeff
-	py := v0
+	px := x
+	py := y
 	draw-jeff
 ;
 
 : move-left
-	#:breakpoint move-left
 	y := py
-	v0 := px
-	v0 += -1
-	if v0 == 255 then v0 := 0
+	x := px
+	x += -1
+	if x == 255 then x := 0
 
-	if v0 == px then return
+	if x == px then return
 
-	check-horiz-shed-collision
-	if v3 == 1 then return
-
-	draw-jeff
-	px := v0
-	draw-jeff
+	check-horiz-shed-collision x y set-jeff-position
 ;
 
 : move-right
 	y := py
-	v0 := px
-	v0 += 1
-	if v0 == 124 then v0 := 123
+	x := px
+	x += 1
+	if x == 124 then x := 123
 
-	if v0 == px then return
+	if x == px then return
 
-	check-horiz-shed-collision
-	if v3 == 1 then return
-
-	draw-jeff
-	px := v0
-	draw-jeff
+	check-horiz-shed-collision x y set-jeff-position
 ;
 
-# check collision with the shed along x axis and put the result in v3
-: check-horiz-shed-collision
-	v3 := 0
-	if v0 < SHED_LEFT_JEFF 	then return
-	if v0 > SHED_RIGHT		then return
-	if y <= SHED_TOP_JEFF	then return
-	if y >= SHED_BOTTOM		then return
+: move-up
+	x := px
+	y := py
+	y += -1
+	if y == 255 then y := 0
 
-	v3 := 1
+	if y == py then return
+
+	check-vert-shed-collision x y set-jeff-position
 ;
 
-# check collision with the shed along y axis and put the result in v3
-: check-vert-shed-collision
-	v3 := 0
-	if v0 <= SHED_TOP_JEFF	then return
-	if v0 > SHED_BOTTOM		then return
-	if x < SHED_LEFT_JEFF	then return
-	if x > SHED_RIGHT		then return
+: move-down
+	x := px
+	y := py
+	y += 1
+	if y == 55 then y := 54
 
-	v3 := 1
+	if y == py then return
+
+	check-vert-shed-collision x y set-jeff-position
 ;
 
 # update the viewer count
@@ -388,14 +368,14 @@
 	sprite px py 10
 
 	if direction == WIND_EAST begin
-		x := px
+		v0 := px
 		get-wind-force
-		x -= wind-force
+		v0 -= wind-force
 
 		if vf == 0 then x := 0
 
 		plane 1
-		sprite x py 10
+		sprite v0 py 10
 	end
 ;
 
