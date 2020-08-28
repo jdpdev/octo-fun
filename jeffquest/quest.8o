@@ -28,14 +28,16 @@
 : main
 	game-state := 0
 
-	loop
-		if game-state == 0 then title-screen
-		if game-state == 1 then game-loop
-	again
+	title-screen
+
+	#loop
+	#	if game-state == 0 then title-screen
+	#	if game-state == 1 then game-loop
+	#again
 ;
 
 : title-screen
-	x := 5
+	x := 11
 	y := 5
 	plane 2
 
@@ -55,7 +57,7 @@
 	sprite x y 9
 
 	i := title-questQ
-	x := 14
+	x := 20
 	y := 16
 	sprite x y 13
 
@@ -76,7 +78,7 @@
 	sprite x y 10
 
 	v0 := key
-	game-state := 1
+	game-loop
 ;
 
 : game-loop
@@ -231,24 +233,24 @@
 : calculate-east-wind-force
 	v4 := 0
 	
-	if px > SHED_LEFT begin
-		v3 := SHED_LEFT
-		ve := px
-		ve -= v3
-		v4 += ve
-		v4 += 10
-	else
-		if py < SHED_TOP begin 
-			v3 := SHED_TOP
-			v4 := py
-			v4 =- v3
-		end
+	if py < SHED_TOP begin 
+		v3 := SHED_TOP
+		v4 := py
+		v4 =- v3
+	end
 
-		if py > SHED_BOTTOM_JEFF begin 
-			v3 := SHED_BOTTOM_JEFF
-			v4 := py
-			v4 -= v3
-		end
+	if py > SHED_BOTTOM_JEFF begin 
+		v3 := SHED_BOTTOM_JEFF
+		v4 := py
+		v4 -= v3
+	end
+
+	if px > SHED_LEFT_JEFF begin
+		v3 := px
+		v3 -= SHED_LEFT_JEFF
+
+		v4 += v3
+		v4 += v3
 	end
 
 	calculate-force
@@ -286,6 +288,8 @@
 		x := px
 		get-wind-force
 		x -= wind-force
+
+		if vf == 0 then x := 0
 
 		plane 1
 		sprite x py 10
@@ -350,4 +354,3 @@
 : title-questU	0xCE 0x84 0x84 0x84 0xCC 0x7C 0x38
 : title-questS	0x3C 0x66 0x62 0x30 0x18 0x8C 0xCC 0x78
 : title-questT	0x18 0x38 0x30 0xF0 0x78 0x3C 0x30 0xB0 0xF0 0x60
-
