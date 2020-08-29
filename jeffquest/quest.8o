@@ -1,11 +1,13 @@
 # ######################################
 # JEFF QUEST
+#  Octo + clip at edges
 #  100/sec
-#  
 #  BG   #000
 #  FG1  #F0F
 #  FG2  #0FF
 #  Bnd  #FFF
+#  Bzz  #909
+#  Sil	#222
 # ######################################
 
 :alias viewer-count		v5	# viewer count in the current order, [0-99]
