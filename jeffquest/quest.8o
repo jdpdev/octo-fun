@@ -61,6 +61,30 @@
 	target >>= target
 }
 
+# check collision with the shed at a point and jump to out if no collision
+:macro check-shed-collision tx ty out {
+	if tx < SHED_LEFT_JEFF 	then jump out
+	if tx > SHED_RIGHT		then jump out
+	if ty <= SHED_TOP_JEFF	then jump out
+	if ty >= SHED_BOTTOM	then jump out
+}
+
+:macro check-jeff-collision x y temp out {
+	get-jeff-right temp
+	if x > temp	then jump out
+
+	temp := x
+	temp += 7
+	if temp < px then jump out
+
+	temp := y
+	temp += 5
+	if temp < py then jump out
+
+	get-jeff-bottom temp
+	if y > temp	then jump out
+}
+
 # #########
 :const WIND_NORTH		0
 :const WIND_EAST		1
@@ -269,30 +293,6 @@
 	v0 := 0x9
 	if v0 key then jump move-right
 ;
-
-# check collision with the shed at a point and jump to out if no collision
-:macro check-shed-collision tx ty out {
-	if tx < SHED_LEFT_JEFF 	then jump out
-	if tx > SHED_RIGHT		then jump out
-	if ty <= SHED_TOP_JEFF	then jump out
-	if ty >= SHED_BOTTOM	then jump out
-}
-
-:macro check-jeff-collision x y temp out {
-	get-jeff-right temp
-	if x > temp	then jump out
-
-	temp := x
-	temp += 7
-	if temp < px then jump out
-
-	temp := y
-	temp += 5
-	if temp < py then jump out
-
-	get-jeff-bottom temp
-	if y > temp	then jump out
-}
 
 : set-jeff-position
 	draw-jeff
