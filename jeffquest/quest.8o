@@ -1,3 +1,13 @@
+# ######################################
+# JEFF QUEST
+#  100/sec
+#  
+#  BG   #000
+#  FG1  #F0F
+#  FG2  #0FF
+#  Bnd  #FFF
+# ######################################
+
 :alias viewer-count		v5	# viewer count in the current order, [0-99]
 :alias viewer-order		v6	# one tick for every 100 viewers
 :alias viewer-rollover	v7	# incremental viewer step
@@ -188,7 +198,7 @@
 	x := 0
 
 	loop
-		y := 100
+		y := 25
 		x += y
 		
 		if vf == 1 begin 
@@ -419,7 +429,8 @@
 	set-debris-alive v0
 
 	debrisX := DEBRIS_SPAWN_X
-	debrisY := 10
+	debrisY := random 48
+	debrisY += 2
 	debrisAccumulate := 0
 
 	i := debris
@@ -447,7 +458,7 @@
 	v0 := 200
 	debrisAccumulate += v0
 	
-	if vf == 1 then jump check-debris-against-shed
+	if vf == 1 then jump check-debris-against-jeff
 ;
 
 : check-debris-against-shed
