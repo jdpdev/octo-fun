@@ -1,7 +1,7 @@
 :alias viewer-count		v5	# viewer count in the current order, [0-99]
 :alias viewer-order		v6	# one tick for every 100 viewers
 :alias viewer-rollover	v7	# incremental viewer step
-:alias is-game-running  v8
+:alias game-state  v8
 
 :alias px				va
 :alias py				vb
@@ -17,6 +17,11 @@
 :alias debrisX			v2
 :alias debrisY			v3
 :alias debrisAccumulate	v4
+
+:const STATE_TITLE		1
+:const STATE_GAME		2
+:const STATE_DEAD		3
+:const STATE_END		4
 
 :const MASK_DEBRIS_ALIVE 0b00000001
 :const MASK_DEBRIS_DEAD  0b11111110
@@ -73,7 +78,30 @@
 :const DEBRIS_SPAWN_X	120
 
 : main
-	title-screen
+	goto-title
+
+	loop
+		if game-state == STATE_TITLE then title-screen
+		if game-state == STATE_GAME then game-loop
+		if game-state == STATE_DEAD then blow-jeff-away
+		if game-state == STATE_END then final-score
+	again
+;
+
+: goto-title
+	game-state := STATE_TITLE
+;
+
+: goto-game
+	game-state := STATE_GAME
+;
+
+: goto-dead
+	game-state := STATE_DEAD
+;
+
+: goto-end
+	game-state := STATE_END
 ;
 
 ## MEMORY ####################################################################
@@ -135,7 +163,7 @@
 : game-loop
 	hires
 
-	is-game-running := 1
+	game-state := 1
 	px := SHED_LEFT_JEFF
 	py := SHED_TOP
 	px += -2
@@ -152,7 +180,7 @@
 		read-input
 		update-viewers
 
-		if is-game-running == 1 then
+		if game-state == 1 then
 	again
 ;
 
@@ -165,7 +193,7 @@
 		if px != 0 then 
 	again
 
-	final-score
+	goto-end
 ;
 
 : final-score
@@ -201,7 +229,7 @@
 	sprite x y 15
 
 	v0 := key
-	title-screen
+	goto-title
 ;
 
 ## THE MEAT    ###############################################################
@@ -439,8 +467,7 @@
 
 : kill-jeff
 	draw-jeff
-	blow-jeff-away
-	is-game-running := 0
+	goto-dead
 ;
 
 : draw-shed
