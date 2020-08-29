@@ -435,8 +435,13 @@
 	set-debris-alive v0
 
 	debrisX := DEBRIS_SPAWN_X
-	debrisY := random 48
-	debrisY += 2
+	debrisY := random 10
+	debrisY += -5
+	debrisY += py
+
+	if vf == 1 then debrisY := 0
+	if debrisY > 56 then debrisY := 56
+
 	debrisAccumulate := 0
 
 	i := debris
