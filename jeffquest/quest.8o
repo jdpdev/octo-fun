@@ -163,7 +163,6 @@
 : game-loop
 	hires
 
-	game-state := 1
 	px := SHED_LEFT_JEFF
 	py := SHED_TOP
 	px += -2
@@ -185,10 +184,18 @@
 ;
 
 : blow-jeff-away
+	draw-jeff-flying
+	x := 0
+
 	loop
-		draw-jeff-flying
-		px += -1
-		draw-jeff-flying
+		y := 100
+		x += y
+		
+		if vf == 1 begin 
+			draw-jeff-flying
+			px += -1
+			draw-jeff-flying
+		end
 
 		if px != 0 then 
 	again
@@ -466,6 +473,7 @@
 ;
 
 : kill-jeff
+	kill-debris
 	draw-jeff
 	goto-dead
 ;
