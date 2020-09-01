@@ -35,9 +35,10 @@
 :const STATE_DEAD		3
 :const STATE_END		4
 
-:const MASK_DEBRIS_ALIVE 0b00000001
-:const MASK_DEBRIS_DEAD  0b11111110
-:const MASK_DEBRIS_TYPE  0b00000110
+:const MASK_DEBRIS_ALIVE 	0b00000001
+:const MASK_DEBRIS_DEAD  	0b11111110
+:const MASK_DEBRIS_TYPE  	0b00000110
+:const MASK_DEBRIS_SET_TYPE 0b11111001
 
 :macro get-debris-alive target temp {
 	target := debris-data
@@ -57,8 +58,18 @@
 
 :macro get-debris-type target temp {
 	target := debris-data
-	target &= MASK_DEBRIS_TYPE
+	temp := MASK_DEBRIS_TYPE
+	target &= temp
 	target >>= target
+}
+
+:macro set-debris-type type temp {
+	:breakpoint set-debris-type
+	temp := MASK_DEBRIS_SET_TYPE
+	debris-data &= temp
+	temp := type
+	temp <<= temp
+	debris-data |= temp
 }
 
 # check collision with the shed at a point and jump to out if no collision
@@ -422,7 +433,7 @@
 	get-debris-alive ve v0
 	if ve == 0 then jump check-spawn-debris
 
-	step-debris
+	move-debris
 ;
 
 : check-spawn-debris
@@ -431,36 +442,38 @@
 ;
 
 : spawn-debris
-	debris-data := 0
-	set-debris-alive v0
+	debris-data := 0b00000001
+	debrisX := random 1
+
+	set-debris-type debrisX debrisY
 
 	debrisX := DEBRIS_SPAWN_X
 	debrisY := random 10
 	debrisY += -5
 	debrisY += py
 
-	if vf == 1 then debrisY := 0
-	if debrisY > 56 then debrisY := 56
+	#if vf == 1 then debrisY := 0
+	#if debrisY > 56 then debrisY := 56
 
 	debrisAccumulate := 0
 
-	i := debris
-	save debris-data - debrisAccumulate
-
+	save-debris
 	draw-debris
 ;
 
 : draw-debris
-	i := board
+	get-debris-type ve v0
+	v0 := 32
+	i := debris-sprites
+
+	loop
+		while ve != 0
+		i += v0
+		ve += -1
+	again
+
 	plane 3
 	sprite debrisX debrisY 15
-;
-
-: step-debris
-	move-debris
-
-	i := debris
-	save debris-data - debrisAccumulate
 ;
 
 : move-debris
@@ -470,6 +483,7 @@
 	debrisAccumulate += v0
 	
 	if vf == 1 then jump check-debris-against-jeff
+	save-debris
 ;
 
 : check-debris-against-shed
@@ -483,9 +497,39 @@
 ;
 
 : do-move-debris
+	#:breakpoint do-move-debris
 	draw-debris
+
+	get-debris-type v0 ve
+	v0 <<= v0
+	jump0 move-debris-type-jump
+;
+
+: move-debris-type-jump
+	jump move-debris-board
+	jump move-debris-tire
+;
+
+: move-debris-board
 	debrisX += -1
+	finalize-step-debris
+;
+
+: move-debris-tire
+	debrisX += -1
+	debrisY += 1
+	finalize-step-debris
+;
+
+: finalize-step-debris
+	#:breakpoint finalize-step-debris
 	draw-debris
+	save-debris
+;
+
+: save-debris
+	i := debris
+	save debris-data - debrisAccumulate
 ;
 
 : kill-debris 
@@ -493,6 +537,7 @@
 	next-spawn := random 30
 	next-spawn += 10
 	draw-debris
+	save-debris
 ;
 
 : kill-jeff
@@ -580,13 +625,15 @@
 0x80 0x3F 0x80 0x3F 0x80 0x3F 0x80 0x3E 
 0x80 0x3C 0x80 0x38 0x80 0x30 0xFF 0xE0
 
-: board
-0x03 0x07 0x1E 0x78 0xE0 0xC0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x03 0x07 0x1E 0x78 0xE0 0xC0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
-
-: tire
-0x38 0x5C 0xB6 0xB6 0x5C 0x38 0x00 0x00 0x00 0x00
-0x00 0x00 0x00 0x00 0x00 0x38 0x5C 0xB6 0xB6 0x5C
-0x38 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: debris-sprites
+0x03 0x07 0x1E 0x78 0xE0 0xC0 0x00 0x00 # board
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x03 
+0x07 0x1E 0x78 0xE0 0xC0 0x00 0x00 0x00 
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+0x38 0x5C 0xB6 0xB6 0x5C 0x38 0x00 0x00 # tire 
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x38 
+0x5C 0xB6 0xB6 0x5C 0x38 0x00 0x00 0x00 
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
 
 : jeff-left		0x20 0x50 0x50 0xA0 0xF0 0x28 0x20 0x50 0x50 0x50
 : jeff-right	0x20 0x50 0x50 0x28 0x78 0xA0 0x20 0x50 0x50 0x50
