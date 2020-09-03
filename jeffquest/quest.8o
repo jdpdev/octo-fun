@@ -64,7 +64,6 @@
 }
 
 :macro set-debris-type type temp {
-	:breakpoint set-debris-type
 	temp := MASK_DEBRIS_SET_TYPE
 	debris-data &= temp
 	temp := type
@@ -518,6 +517,9 @@
 : move-debris-tire
 	debrisX += -1
 	debrisY += 1
+
+	if debrisY > 64 then debrisY := 0
+
 	finalize-step-debris
 ;
 
