@@ -379,18 +379,37 @@
 # update the viewer count
 : update-viewers
 	get-wind-force
+	v4 := 10
 
-	viewer-rollover += wind-force
-	if vf == 1 begin
-		draw-viewers
-		viewer-count += 1
+	if wind-force != 0 begin 
+		viewer-rollover += wind-force
+		
+		if vf == 1 begin
+			draw-viewers
+			viewer-count += 1
+			set-new-viewer-count
+		end 
+	else
+		viewer-rollover -= v4
 
-		if viewer-count == 100 begin
-			viewer-count := 10
-			viewer-order += 1
+		if vf == 0 begin
+			draw-viewers
+
+			v4 := 1
+			viewer-count -= v4
+
+			if vf == 0 then viewer-count := 0
+			set-new-viewer-count
 		end
-		draw-viewers
-	end 
+	end
+;
+
+: set-new-viewer-count
+	if viewer-count == 100 begin
+		viewer-count := 10
+		viewer-order += 1
+	end
+	draw-viewers
 ;
 
 # calculate the force of the wind and save to v3
