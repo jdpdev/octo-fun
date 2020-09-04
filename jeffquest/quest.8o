@@ -35,10 +35,12 @@
 :const STATE_DEAD		3
 :const STATE_END		4
 
-:const MASK_DEBRIS_ALIVE 	0b00000001
-:const MASK_DEBRIS_DEAD  	0b11111110
-:const MASK_DEBRIS_TYPE  	0b00000110
-:const MASK_DEBRIS_SET_TYPE 0b11111001
+:const MASK_DEBRIS_ALIVE 	 0b00000001
+:const MASK_DEBRIS_DEAD  	 0b11111110
+:const MASK_DEBRIS_TYPE  	 0b00000110
+:const MASK_DEBRIS_SET_TYPE  0b11111001
+:const MASK_DEBRIS_DIR_Y	 0b00001000
+:const MASK_DEBRIS_SET_DIR_Y 0b11110111
 
 :macro get-debris-alive target temp {
 	target := debris-data
@@ -67,6 +69,25 @@
 	temp := MASK_DEBRIS_SET_TYPE
 	debris-data &= temp
 	temp := type
+	temp <<= temp
+	debris-data |= temp
+}
+
+:macro get-debris-direction target temp {
+	target := debris-data
+	temp := MASK_DEBRIS_DIR_Y
+	target &= temp
+	target >>= target
+	target >>= target
+	target >>= target
+}
+
+:macro set-debris-direction dir temp {
+	temp := MASK_DEBRIS_SET_DIR_Y
+	debris-data &= temp
+	temp := dir
+	temp <<= temp
+	temp <<= temp
 	temp <<= temp
 	debris-data |= temp
 }
@@ -428,7 +449,6 @@
 	i := debris
 	load debris-data - debrisAccumulate
 
-	#:breakpoint update-debris
 	get-debris-alive ve v0
 	if ve == 0 then jump check-spawn-debris
 
@@ -496,7 +516,6 @@
 ;
 
 : do-move-debris
-	#:breakpoint do-move-debris
 	draw-debris
 
 	get-debris-type v0 ve
@@ -516,15 +535,46 @@
 
 : move-debris-tire
 	debrisX += -1
-	debrisY += 1
+	get-debris-direction v0 ve
 
-	if debrisY > 64 then debrisY := 0
+	ve := random 150
+	#:breakpoint is-ve-0
+	if ve == 0 then reverse-y-direction 
+
+	if v0 == 0 then jump move-debris-down
+	if v0 == 1 then jump move-debris-up
+;
+
+# requires v0 to be the current direction
+: reverse-y-direction
+	if v0 == 0 begin 
+		set-debris-direction 1 ve
+	else
+		set-debris-direction 0 ve
+	end
+;
+
+: move-debris-up
+	debrisY += -1
+	if debrisY > 64 begin 
+		debrisY := 0
+		set-debris-direction 0 v0
+	end
+
+	finalize-step-debris
+;
+
+: move-debris-down
+	debrisY += 1
+	if debrisY > 58 begin 
+		debrisY := 58
+		set-debris-direction 1 v0
+	end
 
 	finalize-step-debris
 ;
 
 : finalize-step-debris
-	#:breakpoint finalize-step-debris
 	draw-debris
 	save-debris
 ;
