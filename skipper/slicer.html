@@ -1,0 +1,113 @@
+<html>
+    <head>
+        <style>
+            .container {
+                display: flex;
+            }
+
+            div {
+                margin-right: 20px;
+            }
+        </style>
+        <script>
+            function setCharAt(str,index,chr) {
+                if(index > str.length-1) return str;
+                return str.substring(0,index) + chr + str.substring(index+1);
+            }
+
+            function shiftByte(byte) {
+                return setCharAt(setCharAt(byte, 2, byte.charAt(3)), 3, '0');
+            }
+
+            function sliceInput() {
+                const inputText = document.getElementById('input').value;
+                const sliceName = document.getElementById('slice-name').value;
+                const outputField = document.getElementById('output');
+                const bytes = splitBytes(inputText);
+                
+                const sliceWidth = 1;
+                const width = 1;
+                const chunkSize = 15;
+                const chunks = splitChunks(bytes, chunkSize);
+                const slices = sliceChunks(chunks);
+                const final = compileSlices(slices);
+                const interlaced = interlaceSlices(final);
+                const printer = [];
+                const jumps = [];
+
+                let step = 0;
+                for (let i = 0; i < interlaced.length; i += 2) {
+                    printer.push(`: ${sliceName}-${step} ${interlaced[i]} ${interlaced[i + 1]}`);
+                    jumps.push(`jump ${sliceName}-${step}   return`)
+                    step++;
+                }
+
+                const binaryData = printer.join('\n');
+                const jumpTable = `: ${sliceName}-jump` + "\n" + jumps.join('\n    ') + "\n";
+
+                outputField.value = jumpTable + ";\n\n" + binaryData;
+            }
+
+            function splitBytes(stream) {
+                return stream.split(/\s+/g);
+            }
+
+            function splitChunks(bytes, chunkSize) {
+                const chunks = [];
+                
+                while (bytes.length > 0) {
+                    chunks.push(bytes.splice(0, chunkSize));
+                }
+
+                return chunks;
+            }
+
+            function sliceChunks(chunks) {
+                return chunks.map(c => c.map(b => ([setCharAt(b, 3, '0'), shiftByte(b)])));
+            }
+
+            function compileSlices(slices) {
+                const compiled = [];
+
+                slices.forEach(s => {
+                    const left = [];
+                    const right = [];
+
+                    s.forEach(i => {
+                        left.push(i[0]);
+                        right.push(i[1]);
+                    })
+
+                    compiled.push(left);
+                    compiled.push(right);
+                })
+
+                return compiled.map(s => s.join(' '));
+            }
+
+            function interlaceSlices(slices) {
+                for (let i = 0; i < slices.length; i += 4) {
+                    const temp = slices[i + 1];
+                    slices[i + 1] = slices[i + 2];
+                    slices[i + 2] = temp;
+                }
+
+                return slices;
+            }
+        </script>
+    </head>
+    <body>
+        <div class="container">
+            <div>
+                <p>Input</p>
+                <p><textarea id='input' cols='64' rows='32'></textarea></p>
+            </div>
+            <div>
+                <p>Output</p>
+                <p><textarea id='output' cols='64' rows='32'></textarea></p>
+            </div>
+        </div>
+        <p>Slice Name <input id='slice-name' /></p>
+        <p><button onclick="sliceInput()">Chunk</button></p>
+    </body>
+</html>
