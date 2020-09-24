@@ -38,7 +38,7 @@
                 let step = 0;
                 for (let i = 0; i < interlaced.length; i += 2) {
                     printer.push(`: ${sliceName}-${step} ${interlaced[i]} ${interlaced[i + 1]}`);
-                    jumps.push(`jump ${sliceName}-${step}   return`)
+                    jumps.push(`i := ${sliceName}-${step} jump draw-slice`)
                     step++;
                 }
 
