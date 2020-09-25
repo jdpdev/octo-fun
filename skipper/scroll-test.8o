@@ -22,7 +22,7 @@
 	plane 1
 	
 	loop
-		i := water-surface
+		i := long water-surface
 		
 		y := BACKGROUND_TOP_Y
 		sprite x y 15
@@ -38,7 +38,10 @@
 	
 	x := 64
 	y := 32
-	i := rock
+	i := long rock
+	plane 1
+	sprite x y 2
+	plane 2
 	sprite x y 2
 
 	slice-index := 0
@@ -106,16 +109,16 @@
 ;
 
 : finish-draw-slice
-	slice-index += 4
+	slice-index += 6
 	if slice-index == background-length then next-background-step
 ;
 
 : next-background-step
 	#:breakpoint nbs
 	slice-index := 0
-	background-step += 8
+	background-step += 4
 	
-	if background-step == 32 then background-step := 0
+	if background-step == 16 then background-step := 0
 	
 	start-landscape
 ;
@@ -125,157 +128,157 @@
 	jump0 setup-landscape
 ;
 
-:const SMALL_WATER_LENGTH 16
-:const MEDIUM_WATER_LENGTH 32
-:const LONG_WATER_LENGTH 48
-:const MOUNTAIN_LENGTH 128
-:const BUTT_ISLAND_LENGTH 64
+:const SMALL_WATER_LENGTH 24
+:const MEDIUM_WATER_LENGTH 48
+:const LONG_WATER_LENGTH 72
+:const MOUNTAIN_LENGTH 192
+:const BUTT_ISLAND_LENGTH 96
 
 : setup-landscape
-	background-length := MOUNTAIN_LENGTH 		return return return
-	background-length := SMALL_WATER_LENGTH 	return return return
-	background-length := BUTT_ISLAND_LENGTH 	return return return
-	background-length := LONG_WATER_LENGTH 		return return return
+	background-length := MOUNTAIN_LENGTH 		return #return return
+	background-length := SMALL_WATER_LENGTH 	return #return return
+	background-length := BUTT_ISLAND_LENGTH 	return #return return
+	background-length := LONG_WATER_LENGTH 		return #return return
 ;
 
 : landscape-steps
-	v0 := slice-index jump0 mountains-jump 					return return
-	v0 := slice-index jump0 small-water-jump 				return return
-	v0 := slice-index jump0 butt-island-jump 				return return
-	v0 := slice-index jump0 medium-water-jump 				return return
+	v0 := slice-index jump0 mountains-jump 				#return return
+	v0 := slice-index jump0 small-water-jump 			#return return
+	v0 := slice-index jump0 butt-island-jump 			#return return
+	v0 := slice-index jump0 medium-water-jump 			#return return
 ;
 
 : landscape-mirror-steps
-	v0 := slice-index jump0 mountain-mirror-jump 		return return
-	finish-draw-slice return return return
-	v0 := slice-index jump0 butt-island-mirror-jump 		return return
-	finish-draw-slice return return return
+	v0 := slice-index jump0 mountain-mirror-jump 		#return return
+	finish-draw-slice return 							#return return
+	v0 := slice-index jump0 butt-island-mirror-jump 	#return return
+	finish-draw-slice return 							#return return
 ;
 
 : mountains-jump
-	i := mountains-0  jump draw-slice
-	i := mountains-1  jump draw-slice
-	i := mountains-2  jump draw-slice
-	i := mountains-3  jump draw-slice
-	i := mountains-4  jump draw-slice
-	i := mountains-5  jump draw-slice
-	i := mountains-6  jump draw-slice
-	i := mountains-7  jump draw-slice
-	i := mountains-8  jump draw-slice
-	i := mountains-9  jump draw-slice
-	i := mountains-10 jump draw-slice
-	i := mountains-11 jump draw-slice
-	i := mountains-12 jump draw-slice
-	i := mountains-13 jump draw-slice
-	i := mountains-14 jump draw-slice
-	i := mountains-15 jump draw-slice
-	i := mountains-16 jump draw-slice
-	i := mountains-17 jump draw-slice
-	i := mountains-18 jump draw-slice
-	i := mountains-19 jump draw-slice
-	i := mountains-20 jump draw-slice
-	i := mountains-21 jump draw-slice
-	i := mountains-22 jump draw-slice
-	i := mountains-23 jump draw-slice
-	i := mountains-24 jump draw-slice
-	i := mountains-25 jump draw-slice
-	i := mountains-26 jump draw-slice
-	i := mountains-27 jump draw-slice
-	i := mountains-28 jump draw-slice
-	i := mountains-29 jump draw-slice
-	i := mountains-30 jump draw-slice
-	i := mountains-31 jump draw-slice
+	i := long mountains-0  jump draw-slice
+	i := long mountains-1  jump draw-slice
+	i := long mountains-2  jump draw-slice
+	i := long mountains-3  jump draw-slice
+	i := long mountains-4  jump draw-slice
+	i := long mountains-5  jump draw-slice
+	i := long mountains-6  jump draw-slice
+	i := long mountains-7  jump draw-slice
+	i := long mountains-8  jump draw-slice
+	i := long mountains-9  jump draw-slice
+	i := long mountains-10 jump draw-slice
+	i := long mountains-11 jump draw-slice
+	i := long mountains-12 jump draw-slice
+	i := long mountains-13 jump draw-slice
+	i := long mountains-14 jump draw-slice
+	i := long mountains-15 jump draw-slice
+	i := long mountains-16 jump draw-slice
+	i := long mountains-17 jump draw-slice
+	i := long mountains-18 jump draw-slice
+	i := long mountains-19 jump draw-slice
+	i := long mountains-20 jump draw-slice
+	i := long mountains-21 jump draw-slice
+	i := long mountains-22 jump draw-slice
+	i := long mountains-23 jump draw-slice
+	i := long mountains-24 jump draw-slice
+	i := long mountains-25 jump draw-slice
+	i := long mountains-26 jump draw-slice
+	i := long mountains-27 jump draw-slice
+	i := long mountains-28 jump draw-slice
+	i := long mountains-29 jump draw-slice
+	i := long mountains-30 jump draw-slice
+	i := long mountains-31 jump draw-slice
 ;
 
 : mountain-mirror-jump
-	i := mountain-mirror-0  jump draw-mirror-slice
-	i := mountain-mirror-1  jump draw-mirror-slice
-	i := mountain-mirror-2  jump draw-mirror-slice
-	i := mountain-mirror-3  jump draw-mirror-slice
-	i := mountain-mirror-4  jump draw-mirror-slice
-	i := mountain-mirror-5  jump draw-mirror-slice
-	i := mountain-mirror-6  jump draw-mirror-slice
-	i := mountain-mirror-7  jump draw-mirror-slice
-	i := mountain-mirror-8  jump draw-mirror-slice
-	i := mountain-mirror-9  jump draw-mirror-slice
-	i := mountain-mirror-10 jump draw-mirror-slice
-	i := mountain-mirror-11 jump draw-mirror-slice
-	i := mountain-mirror-12 jump draw-mirror-slice
-	i := mountain-mirror-13 jump draw-mirror-slice
-	i := mountain-mirror-14 jump draw-mirror-slice
-	i := mountain-mirror-15 jump draw-mirror-slice
-	i := mountain-mirror-16 jump draw-mirror-slice
-	i := mountain-mirror-17 jump draw-mirror-slice
-	i := mountain-mirror-18 jump draw-mirror-slice
-	i := mountain-mirror-19 jump draw-mirror-slice
-	i := mountain-mirror-20 jump draw-mirror-slice
-	i := mountain-mirror-21 jump draw-mirror-slice
-	i := mountain-mirror-22 jump draw-mirror-slice
-	i := mountain-mirror-23 jump draw-mirror-slice
-	i := mountain-mirror-24 jump draw-mirror-slice
-	i := mountain-mirror-25 jump draw-mirror-slice
-	i := mountain-mirror-26 jump draw-mirror-slice
-	i := mountain-mirror-27 jump draw-mirror-slice
-	i := mountain-mirror-28 jump draw-mirror-slice
-	i := mountain-mirror-29 jump draw-mirror-slice
-	i := mountain-mirror-30 jump draw-mirror-slice
-	i := mountain-mirror-31 jump draw-mirror-slice
+	i := long mountain-mirror-0  jump draw-mirror-slice
+	i := long mountain-mirror-1  jump draw-mirror-slice
+	i := long mountain-mirror-2  jump draw-mirror-slice
+	i := long mountain-mirror-3  jump draw-mirror-slice
+	i := long mountain-mirror-4  jump draw-mirror-slice
+	i := long mountain-mirror-5  jump draw-mirror-slice
+	i := long mountain-mirror-6  jump draw-mirror-slice
+	i := long mountain-mirror-7  jump draw-mirror-slice
+	i := long mountain-mirror-8  jump draw-mirror-slice
+	i := long mountain-mirror-9  jump draw-mirror-slice
+	i := long mountain-mirror-10 jump draw-mirror-slice
+	i := long mountain-mirror-11 jump draw-mirror-slice
+	i := long mountain-mirror-12 jump draw-mirror-slice
+	i := long mountain-mirror-13 jump draw-mirror-slice
+	i := long mountain-mirror-14 jump draw-mirror-slice
+	i := long mountain-mirror-15 jump draw-mirror-slice
+	i := long mountain-mirror-16 jump draw-mirror-slice
+	i := long mountain-mirror-17 jump draw-mirror-slice
+	i := long mountain-mirror-18 jump draw-mirror-slice
+	i := long mountain-mirror-19 jump draw-mirror-slice
+	i := long mountain-mirror-20 jump draw-mirror-slice
+	i := long mountain-mirror-21 jump draw-mirror-slice
+	i := long mountain-mirror-22 jump draw-mirror-slice
+	i := long mountain-mirror-23 jump draw-mirror-slice
+	i := long mountain-mirror-24 jump draw-mirror-slice
+	i := long mountain-mirror-25 jump draw-mirror-slice
+	i := long mountain-mirror-26 jump draw-mirror-slice
+	i := long mountain-mirror-27 jump draw-mirror-slice
+	i := long mountain-mirror-28 jump draw-mirror-slice
+	i := long mountain-mirror-29 jump draw-mirror-slice
+	i := long mountain-mirror-30 jump draw-mirror-slice
+	i := long mountain-mirror-31 jump draw-mirror-slice
 ;
 
 : butt-island-jump
-	i := butt-island-0 jump draw-slice
-	i := butt-island-1 jump draw-slice
-	i := butt-island-2 jump draw-slice
-	i := butt-island-3 jump draw-slice
-	i := butt-island-4 jump draw-slice
-	i := butt-island-5 jump draw-slice
-	i := butt-island-6 jump draw-slice
-	i := butt-island-7 jump draw-slice
-	i := butt-island-8 jump draw-slice
-	i := butt-island-9 jump draw-slice
-	i := butt-island-10 jump draw-slice
-	i := butt-island-11 jump draw-slice
-	i := butt-island-12 jump draw-slice
-	i := butt-island-13 jump draw-slice
-	i := butt-island-14 jump draw-slice
-	i := butt-island-15 jump draw-slice
+	i := long butt-island-0 jump draw-slice
+	i := long butt-island-1 jump draw-slice
+	i := long butt-island-2 jump draw-slice
+	i := long butt-island-3 jump draw-slice
+	i := long butt-island-4 jump draw-slice
+	i := long butt-island-5 jump draw-slice
+	i := long butt-island-6 jump draw-slice
+	i := long butt-island-7 jump draw-slice
+	i := long butt-island-8 jump draw-slice
+	i := long butt-island-9 jump draw-slice
+	i := long butt-island-10 jump draw-slice
+	i := long butt-island-11 jump draw-slice
+	i := long butt-island-12 jump draw-slice
+	i := long butt-island-13 jump draw-slice
+	i := long butt-island-14 jump draw-slice
+	i := long butt-island-15 jump draw-slice
 ;
 
 : butt-island-mirror-jump
-	i := butt-island-mirror-0 jump draw-mirror-slice
-	i := butt-island-mirror-1 jump draw-mirror-slice
-	i := butt-island-mirror-2 jump draw-mirror-slice
-	i := butt-island-mirror-3 jump draw-mirror-slice
-	i := butt-island-mirror-4 jump draw-mirror-slice
-	i := butt-island-mirror-5 jump draw-mirror-slice
-	i := butt-island-mirror-6 jump draw-mirror-slice
-	i := butt-island-mirror-7 jump draw-mirror-slice
-	i := butt-island-mirror-8 jump draw-mirror-slice
-	i := butt-island-mirror-9 jump draw-mirror-slice
-	i := butt-island-mirror-10 jump draw-mirror-slice
-	i := butt-island-mirror-11 jump draw-mirror-slice
-	i := butt-island-mirror-12 jump draw-mirror-slice
-	i := butt-island-mirror-13 jump draw-mirror-slice
-	i := butt-island-mirror-14 jump draw-mirror-slice
-	i := butt-island-mirror-15 jump draw-mirror-slice
+	i := long butt-island-mirror-0 jump draw-mirror-slice
+	i := long butt-island-mirror-1 jump draw-mirror-slice
+	i := long butt-island-mirror-2 jump draw-mirror-slice
+	i := long butt-island-mirror-3 jump draw-mirror-slice
+	i := long butt-island-mirror-4 jump draw-mirror-slice
+	i := long butt-island-mirror-5 jump draw-mirror-slice
+	i := long butt-island-mirror-6 jump draw-mirror-slice
+	i := long butt-island-mirror-7 jump draw-mirror-slice
+	i := long butt-island-mirror-8 jump draw-mirror-slice
+	i := long butt-island-mirror-9 jump draw-mirror-slice
+	i := long butt-island-mirror-10 jump draw-mirror-slice
+	i := long butt-island-mirror-11 jump draw-mirror-slice
+	i := long butt-island-mirror-12 jump draw-mirror-slice
+	i := long butt-island-mirror-13 jump draw-mirror-slice
+	i := long butt-island-mirror-14 jump draw-mirror-slice
+	i := long butt-island-mirror-15 jump draw-mirror-slice
 ;
 
 : small-water-jump
-	i := water-surface	jump draw-slice
-	i := water-surface	jump draw-slice
-	i := water-surface	jump draw-slice
-	i := water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
 ;
 
 : medium-water-jump
-	i := water-surface	jump draw-slice
-	i := water-surface	jump draw-slice
-	i := water-surface	jump draw-slice
-	i := water-surface	jump draw-slice
-	i := water-surface	jump draw-slice
-	i := water-surface	jump draw-slice
-	i := water-surface	jump draw-slice
-	i := water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
+	i := long water-surface	jump draw-slice
 ;
 
 : rock 0xC0 0xC0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xC0 0xC0
