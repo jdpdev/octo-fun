@@ -5,18 +5,28 @@
 :alias background-step v5
 :alias background-length v6
 
-:alias px	vb
-:alias py	vc
-:alias vy	vd
-:alias dv	ve
+:alias py-old	va
+:alias py		vb
+:alias vy		vc
+:alias vy-step	vd
+:alias dv		ve
 
-:const BACKGROUND_X 124
+:const BACKGROUND_X 	124
 :const BACKGROUND_TOP_Y 10
 :const BACKGROUND_BOT_Y 40
-:const WATER_SURFACE_Y 48
+:const WATER_SURFACE_Y 	48
+:const STONE_X 			64
 
 :const GO_DOWN 0
 :const GO_UP 1
+
+:macro draw-stone x y {
+	i := long rock
+	plane 1
+	sprite x y 2
+	plane 2
+	sprite x y 2
+}
 
 : main
 	hires
@@ -25,20 +35,20 @@
 ;
 
 : scroll-slice-test
+	vy := 0
+	vy-step := 0
+	dv := GO_DOWN
+
 	x := 0
 	v0 := 15
 	slice-index := 0
 	plane 1
 
-	px := 0
+	va := 0
 	py := 26
-	vy := 1
 	dv := GO_DOWN
 	i := long rock
-	plane 1
-	sprite px py 2
-	plane 2
-	sprite px py 2
+	draw-stone va py
 	
 	loop
 		plane 1
@@ -52,31 +62,29 @@
 		sprite x y 15
 
 		i := long rock
-		plane 1
-		sprite px py 2
-		plane 2
-		sprite px py 2
-		px += 2
-		plane 1
-		sprite px py 2
-		plane 2
-		sprite px py 2
+		draw-stone va py
+		va += 2
+		draw-stone va py
 
 		x += 4
 		slice-index += 1
 		if slice-index != 32 then
 	again
 	
-
 	slice-index := 0
 	background-step := 0
 	start-landscape
 
+	py-old := py
+
 	loop
+		v0 := STONE_X
+		draw-stone v0 py-old
 		plane 3
 		scroll-left
 	
 		draw-next-slice
+		step-stone
 	
 		vf := 10
 		delay := vf
@@ -88,9 +96,26 @@
 	again
 ;
 
-: pick-background-slice
-	slice-index := 0
-	background-step := 0
+: step-stone
+	#py += vy
+	v0 := STONE_X
+	draw-stone v0 py
+	py-old := py
+
+	v0 := 10
+	if vy != 255 then vy += v0
+	if vf == 1 begin
+		vy := 255
+	end
+
+	vy-step += vy
+	if vf == 1 begin
+		if dv == GO_UP then py += -1
+		if dv == GO_DOWN then py += 1
+	end
+
+	if py == WATER_SURFACE_Y then dv := GO_UP
+	#if py == 28 then dv := GO_DOWN
 ;
 
 : draw-next-slice
