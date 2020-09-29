@@ -1,3 +1,11 @@
+# Compatibility: XO-Chip
+# 100 cycles/frame
+#
+# BG: #000
+# F1: #fff
+# F2: #609
+# Bl: #fff
+
 :alias x v1
 :alias y v2
 :alias height v3
@@ -14,7 +22,7 @@
 :const BACKGROUND_X 	124
 :const BACKGROUND_TOP_Y 10
 :const BACKGROUND_BOT_Y 40
-:const WATER_SURFACE_Y 	48
+:const WATER_SURFACE_Y 	44
 :const STONE_X 			64
 
 :const GO_DOWN 0
@@ -24,8 +32,20 @@
 	i := long rock
 	plane 1
 	sprite x y 2
+}
+
+:macro draw-mirror-stone x y {
+	i := long rock
+	plane 1
+	sprite x y 2
 	plane 2
 	sprite x y 2
+}
+
+:macro calc-mirror-y y out {
+	out := WATER_SURFACE_Y
+	out -= y
+	out += WATER_SURFACE_Y
 }
 
 : main
@@ -51,7 +71,7 @@
 	draw-stone va py
 	
 	loop
-		plane 1
+		plane 2
 		i := long water-surface
 		
 		y := BACKGROUND_TOP_Y
@@ -78,8 +98,10 @@
 	py-old := py
 
 	loop
-		v0 := STONE_X
-		draw-stone v0 py-old
+		x := STONE_X
+		calc-mirror-y py-old y
+		draw-stone x py-old
+		draw-mirror-stone x y
 		plane 3
 		scroll-left
 	
@@ -97,25 +119,58 @@
 ;
 
 : step-stone
-	#py += vy
-	v0 := STONE_X
-	draw-stone v0 py
 	py-old := py
 
-	v0 := 10
-	if vy != 255 then vy += v0
-	if vf == 1 begin
-		vy := 255
-	end
+	x := STONE_X
+	draw-stone x py
 
+	x := STONE_X
+	calc-mirror-y py y
+	draw-mirror-stone x y
+
+	update-vertical-speed
+	move-stone
+;
+
+: update-vertical-speed
+	if vy == 255 then jump move-stone
+
+	if dv == GO_DOWN 	then jump update-dv-down
+	if dv == GO_UP 		then jump update-dv-up
+;
+
+: update-dv-up
+	v0 := 10
+	vy -= v0
+	
+	if vf == 0 then dv := GO_DOWN
+;
+
+: update-dv-down
+	v0 := 10
+	vy += v0
+	
+	if vf == 1 then vy := 255
+;
+
+: move-stone
 	vy-step += vy
 	if vf == 1 begin
 		if dv == GO_UP then py += -1
 		if dv == GO_DOWN then py += 1
 	end
 
-	if py == WATER_SURFACE_Y then dv := GO_UP
-	#if py == 28 then dv := GO_DOWN
+	if py == WATER_SURFACE_Y then splish-splash
+;
+
+: splish-splash
+	dv := GO_UP
+	neutral-spash
+;
+
+: neutral-spash
+	v0 := 30
+	vy -= v0
 ;
 
 : draw-next-slice
@@ -129,7 +184,7 @@
 	y := BACKGROUND_TOP_Y
 	height := 15
 	
-	plane 1
+	plane 2
 	sprite x y 15
 	y += height
 	i += height
