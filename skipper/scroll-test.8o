@@ -26,9 +26,13 @@
 :const BACKGROUND_BOT_Y 40
 :const WATER_SURFACE_Y 	44
 :const STONE_X 			64
+:const KEY_X			60
+:const KEY_X_SHIFTED	60
+:const KEY_Y			4
+:const NULL_KEY			255
 :const ARC_MAX			8
 :const ARC_STEP			6
-:calc ARC_START { ARC_STEP * ( ARC_MAX - 1 ) }
+:calc ARC_START { ARC_STEP * ( ( ARC_MAX / 2 ) - 1 ) }
 
 :const GO_DOWN 0
 :const GO_UP 1
@@ -98,7 +102,10 @@
 	vy-step := 0
 	slice-index := 0
 	background-step := 0
+	expected-key := 0
+	
 	start-landscape
+	expected-key := NULL_KEY
 
 	py-old := py
 
@@ -108,9 +115,13 @@
 		draw-stone x py-old
 		draw-mirror-stone x y
 
+		#:breakpoint clear-key
+		draw-key
+
 		plane 3
 		scroll-left
 	
+		draw-key
 		draw-next-slice
 		step-stone
 
@@ -128,7 +139,45 @@
 
 : check-input
 	v0 := OCTO_KEY_A
-	if v0 key then actual-key := v0
+	if v0 key then jump process-input
+	
+	v0 := OCTO_KEY_S
+	if v0 key then jump process-input
+	
+	v0 := OCTO_KEY_D
+	if v0 key then jump process-input
+	
+	v0 := OCTO_KEY_F
+	if v0 key then jump process-input
+;
+
+# v0 is the key
+: process-input
+	actual-key := v0
+;
+
+: key-list 0x7 0x8 0x9 0xE
+
+: select-next-key
+	draw-key
+
+	v0 := random 0b11
+	i := key-list
+	i += v0
+	load expected-key - expected-key
+
+	draw-key
+;
+
+: draw-key
+	if expected-key == NULL_KEY then return
+
+	x := KEY_X
+	y := KEY_Y
+	select-note-sprite
+	
+	plane 2
+	sprite x y 8
 ;
 
 : step-stone
@@ -157,6 +206,7 @@
 
 : splish-splash
 	vy-step := 1
+	select-next-key
 	bad-splash
 ;
 
@@ -168,12 +218,18 @@
 	v0 := ARC_STEP
 	vy -= v0
 
+	v0 := 5
+	buzzer := v0
+
 	if vf == 0 then jump game-over
 ;
 
 : good-splash
 	v0 := ARC_STEP
 	vy += v0
+
+	v0 := 20
+	buzzer := v0
 
 	if vy == ARC_MAX then vy := ARC_MAX
 ;
@@ -415,6 +471,17 @@
 	i := long water-surface	jump draw-slice
 ;
 
+: select-note-sprite
+	if expected-key == OCTO_KEY_A then i := note-simple-a
+	if expected-key == OCTO_KEY_S then i := note-simple-s
+	if expected-key == OCTO_KEY_D then i := note-simple-d
+	if expected-key == OCTO_KEY_F then i := note-simple-f
+	if expected-key == OCTO_KEY_Q then i := note-simple-q
+	if expected-key == OCTO_KEY_W then i := note-simple-w
+	if expected-key == OCTO_KEY_E then i := note-simple-e
+	if expected-key == OCTO_KEY_R then i := note-simple-r
+;
+
 : rock 0xC0 0xC0
 
 : arc-1 0x1 0x2 0x3 0x4 0x3 0x2 0x1 0x0
@@ -430,12 +497,11 @@
 : note-simple-s 0x7E 0xE3 0xDF 0xC3 0xFB 0xC7 0xFF 0x7E
 : note-simple-d 0x7E 0xC7 0xDB 0xDB 0xDB 0xC7 0xFF 0x7E
 : note-simple-f 0x7E 0xC3 0xDF 0xC7 0xDF 0xDF 0xFF 0x7E
-: note-simple-question 0x7E 0xC3 0xFB 0xFB 0xE7 0xFF 0xE7 0x7E
-
 : note-simple-q 0x7E 0xE7 0xDB 0xDB 0xE3 0xFB 0xFF 0x7E
 : note-simple-w 0x7E 0xFF 0xDD 0xD5 0xD5 0xC1 0xFF 0x7E
 : note-simple-e 0x7E 0xFF 0xC3 0xD3 0xCF 0xC3 0xFF 0x7E
 : note-simple-r 0x7E 0xFF 0xC7 0xDB 0xD7 0xDB 0xFF 0x7E
+: note-simple-question 0x7E 0xC3 0xFB 0xFB 0xE7 0xFF 0xE7 0x7E
 
 : mountains-0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xF0
 : mountains-1 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x30 0xF0
