@@ -13,6 +13,8 @@
 :alias background-step v5
 :alias background-length v6
 
+:alias expected-key v8
+:alias actual-key 	v9
 :alias py-old	va
 :alias py		vb
 :alias vy		vc
@@ -116,6 +118,11 @@
 			if vf != 0 then
 		again
 	again
+;
+
+: check-input
+	v0 := OCTO_KEY_A
+	if v0 key then actual-key := v0
 ;
 
 : step-stone
