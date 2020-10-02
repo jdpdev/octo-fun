@@ -116,9 +116,10 @@
 	again
 	
 	# play the game
+	py := v2
 	vy := ARC_START
 	#i := arc-5
-	vy-step := 0
+	vy-step := 2
 	next-key-time := 0x5
 
 	slice-index := 0
@@ -128,15 +129,17 @@
 	
 	start-landscape
 	
-	py-old := py
+	py-old := 255
+	#:breakpoint start-game
 
 	loop
-		x := STONE_X
-		calc-mirror-y py-old y
-		draw-stone x py-old
-		draw-mirror-stone x y
+		if py-old != 255 begin
+			x := STONE_X
+			calc-mirror-y py-old y
+			draw-stone x py-old
+			draw-mirror-stone x y
+		end
 
-		#:breakpoint clear-key
 		draw-key
 
 		plane 3
@@ -145,6 +148,7 @@
 		draw-key
 		draw-next-slice
 		step-stone
+		#:breakpoint after-step
 
 		check-input
 	
@@ -217,6 +221,7 @@
 ;
 
 : step-stone
+	#:breakpoint step-stone
 	py-old := py
 
 	x := STONE_X
@@ -252,7 +257,7 @@
 ;
 
 : splish-splash
-	vy-step := 0
+	vy-step := 2
 	
 	if actual-key != NULL_KEY then good-splash
 	if actual-key == NULL_KEY then bad-splash
@@ -541,21 +546,37 @@
 # bytes alternate x,y offsets
 : arc-start 
 	0x00 8
+	0x02 9
 	0x04 10
+	0x06 11
 	0x08 12
+	0x0A 13
 	0x0C 14
+	0x0E 15
 	0x10 16
+	0x12 17
 	0x14 18
+	0x16 19
 	0x18 20
-	0x1C 18
-	0x20 16
-	0x24 14
+	0x1A 20
+	0x1C 19
+	0x1E 18
+	0x20 17
+	0x22 16
+	0x24 15
+	0x26 13
 	0x28 12
+	0x2A 11
 	0x2C 10
+	0x2E 9
 	0x30 8
+	0x32 7
 	0x34 6
+	0x36 5
 	0x38 4
+	0x3A 3
 	0x3C 2
+	0x3E 1
 	0x40 0x00
 
 # first byte is the index to select the next key
