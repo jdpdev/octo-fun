@@ -302,7 +302,7 @@
 ;
 
 : splish-splash
-	vy-step := 2
+	vy-step := 0
 	
 	if actual-key != NULL_KEY then good-splash
 	if actual-key == NULL_KEY then bad-splash
