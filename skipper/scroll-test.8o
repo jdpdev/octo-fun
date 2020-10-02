@@ -10,9 +10,10 @@
 :alias x v1
 :alias y v2
 :alias height v3
-# alias ... v4
 
 # permanent  ##########################
+:alias skip-count		 v4 # total number of skips 
+
 							# TODO save in memory to be made temporary?
 :alias slice-index 		 v6	# which slice of a landscape we're drawing
 :alias background-step 	 v7 # which landscape we're drawing
@@ -123,6 +124,7 @@
 	vy-step := 2
 	next-key-time := 0x5
 
+	skip-count := 0
 	slice-index := 0
 	background-step := 0
 	expected-key := NULL_KEY
@@ -325,16 +327,14 @@
 ;
 
 : good-splash
+	skip-count += 1
 	v0 := ARC_STEP
 	vy += v0
 
 	v0 := 20
 	buzzer := v0
 
-	if vy == ARC_MAX begin 
-		#:breakpoint cap-arc
-		vy := ARC_END
-	end
+	if vy == ARC_MAX then vy := ARC_END
 ;
 
 : game-over
