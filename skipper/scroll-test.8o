@@ -151,9 +151,14 @@
 		step-stone
 		#:breakpoint after-step
 
-		check-input
-	
-		wait-timer
+		vf := 10
+		delay := vf
+		
+		loop
+			check-input
+			vf := delay
+			if vf != 0 then
+		again
 
 		if expected-key != ABORT_KEY then
 	again
