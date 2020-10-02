@@ -50,7 +50,7 @@
 }
 
 :macro draw-mirror-stone x y {
-	i := long rock
+	i := long rock-mirror
 	plane 1
 	sprite x y 2
 }
@@ -58,6 +58,7 @@
 :macro calc-mirror-y y out {
 	out := WATER_SURFACE_Y
 	out -= y
+	out >>= out
 	out += WATER_SURFACE_Y
 	out -= 1
 }
@@ -587,7 +588,7 @@
 ;
 
 : rock 0xC0 0xC0
-
+: rock-mirror 0xC0 0x00
 
 # bytes alternate x,y offsets
 : arc-start 
