@@ -9,9 +9,10 @@
 ## situational or temporary ###########
 :alias x v1
 :alias y v2
-:alias height v3
+:alias height v0
 
 # permanent  ##########################
+:alias difficulty-level  v3
 :alias skip-count		 v4 # total number of skips 
 
 							# TODO save in memory to be made temporary?
@@ -22,7 +23,6 @@
 :alias next-key-time v5
 :alias expected-key v9
 :alias actual-key 	va
-:alias py-old		vb # TODO could look backwards in arc instead of saving
 :alias py			vc
 :alias vy			vd # which stone arc we're using
 :alias vy-step		ve # position within arc 
@@ -132,18 +132,8 @@
 	actual-key := NULL_KEY
 	
 	start-landscape
-	
-	py-old := 255
-	#:breakpoint start-game
 
 	loop
-		if py-old != 255 begin
-			x := STONE_X
-			calc-mirror-y py-old y
-			draw-stone x py-old
-			draw-mirror-stone x y
-		end
-
 		draw-key
 
 		plane 3
@@ -151,6 +141,8 @@
 	
 		draw-key
 		draw-next-slice
+
+		load-skip-arc
 		step-stone
 		#:breakpoint after-step
 
@@ -162,6 +154,11 @@
 			vf := delay
 			if vf != 0 then
 		again
+
+		x := STONE_X
+		draw-stone x py
+		calc-mirror-y py y
+		draw-mirror-stone x y
 
 		if expected-key != ABORT_KEY then
 	again
@@ -235,7 +232,7 @@
 	if v0 == expected-key then actual-key := v0
 	if v0 != expected-key then actual-key := NULL_KEY
 	expected-key := NULL_KEY
-;
+; 
 
 : key-list1 0x7 0x8 0x9 0xE
 : key-list2 0x7 0x8 0x4 0x5
@@ -244,8 +241,8 @@
 : key-list5 0x5 0x6 0x8 0x9
 : key-list6 0x4 0x5 0x9 0xE
 : key-list7 0x7 0x8 0x6 0xD
-: key-list7 0x4 0x7 0xD 0xE
-: key-list7 0x4 0x5 0x6 0xD 0x7 0x8 0x9 0xE 
+: key-list8 0x4 0x7 0xD 0xE
+: key-list9 0x4 0x5 0x6 0xD 0x7 0x8 0x9 0xE
 
 : select-next-key
 	if expected-key != NULL_KEY then return
@@ -278,7 +275,7 @@
 
 : step-stone
 	#:breakpoint step-stone
-	py-old := py
+	#py-old := py
 
 	x := STONE_X
 	draw-stone x py
@@ -287,7 +284,7 @@
 	calc-mirror-y py y
 	draw-mirror-stone x y
 
-	load-skip-arc
+	#load-skip-arc
 ;
 
 : move-stone
