@@ -246,10 +246,23 @@
 
 # v0 is the key
 : process-input
-	if v0 == expected-key then actual-key := v0
-	if v0 != expected-key then actual-key := NULL_KEY
-	expected-key := NULL_KEY
+	if v0 == expected-key then jump correct-key
+	if v0 != expected-key then jump wrong-key
 ; 
+
+: correct-key
+	actual-key := v0
+	expected-key := NULL_KEY
+	v0 := 20
+	buzzer := v0
+;
+
+: wrong-key
+	actual-key := NULL_KEY
+	expected-key := NULL_KEY
+	v0 := 5
+	buzzer := v0
+;
 
 : key-list1 0x7 0x8 0x9 0xE 0x7 0x8 0x9 0xE
 : key-list2 0x7 0x8 0x4 0x5 0x7 0x8 0x4 0x5
@@ -346,9 +359,6 @@
 ;
 
 : bad-splash
-	v0 := 5
-	buzzer := v0
-
 	v0 := ARC_STEP
 	vy -= v0
 
@@ -358,9 +368,6 @@
 : good-splash
 	v0 := ARC_STEP
 	vy += v0
-
-	v0 := 20
-	buzzer := v0
 
 	if vy == ARC_MAX then vy := ARC_END
 ;
