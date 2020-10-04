@@ -13,20 +13,23 @@
 
 # permanent  ##########################
 :alias difficulty-level  v3
-:alias skip-count		 v4 # total number of skips 
+:alias difficulty-loop	 v4 # increment difficulty-level on overflow 
+:alias skip-count		 v5 # total number of skips 
 
 							# TODO save in memory to be made temporary?
 :alias slice-index 		 v6	# which slice of a landscape we're drawing
 :alias background-step 	 v7 # which landscape we're drawing
 :alias background-length v8 # size of the current landscape
 
-:alias next-key-time v5
-:alias expected-key v9
-:alias actual-key 	va
+:alias next-key-time v9
+:alias expected-key va
+:alias actual-key 	vb
 :alias py			vc
 :alias vy			vd # which stone arc we're using
 :alias vy-step		ve # position within arc 
 
+:const DIFFICULTY_STEP		26
+:const DIFFICULTY_ROLLOVER	10
 :const BACKGROUND_X 	124
 :const BACKGROUND_TOP_Y 10
 :const BACKGROUND_BOT_Y 40
@@ -125,6 +128,8 @@
 	vy-step := 2
 	next-key-time := 0x5
 
+	difficulty-level := 0
+	difficulty-loop := 0
 	skip-count := 0
 	slice-index := 0
 	background-step := 0
@@ -225,6 +230,18 @@
 	
 	v0 := OCTO_KEY_F
 	if v0 key then jump process-input
+
+	v0 := OCTO_KEY_Q
+	if v0 key then jump process-input
+	
+	v0 := OCTO_KEY_W
+	if v0 key then jump process-input
+	
+	v0 := OCTO_KEY_E
+	if v0 key then jump process-input
+	
+	v0 := OCTO_KEY_R
+	if v0 key then jump process-input
 ;
 
 # v0 is the key
@@ -234,23 +251,23 @@
 	expected-key := NULL_KEY
 ; 
 
-: key-list1 0x7 0x8 0x9 0xE
-: key-list2 0x7 0x8 0x4 0x5
-: key-list3 0x4 0x5 0x6 0xD
-: key-list4 0x9 0xE 0x6 0xD
-: key-list5 0x5 0x6 0x8 0x9
-: key-list6 0x4 0x5 0x9 0xE
-: key-list7 0x7 0x8 0x6 0xD
-: key-list8 0x4 0x7 0xD 0xE
+: key-list1 0x7 0x8 0x9 0xE 0x7 0x8 0x9 0xE
+: key-list2 0x7 0x8 0x4 0x5 0x7 0x8 0x4 0x5
+: key-list3 0x4 0x5 0x6 0xD 0x4 0x5 0x6 0xD
+: key-list4 0x9 0xE 0x6 0xD 0x9 0xE 0x6 0xD
+: key-list5 0x5 0x6 0x8 0x9 0x5 0x6 0x8 0x9
+: key-list6 0x4 0x5 0x9 0xE 0x4 0x5 0x9 0xE
+: key-list7 0x7 0x8 0x6 0xD 0x7 0x8 0x6 0xD
+: key-list8 0x4 0x7 0xD 0xE 0x4 0x7 0xD 0xE
 : key-list9 0x4 0x5 0x6 0xD 0x7 0x8 0x9 0xE
 
 : select-next-key
 	if expected-key != NULL_KEY then return
 
 	draw-key
-
-	v0 := random 0b11
-	i := key-list1
+	get-key-list
+	
+	v0 := random 0b111
 	i += v0
 	load expected-key - expected-key
 
@@ -312,6 +329,12 @@
 : splish-splash
 	vy-step := 0
 	
+	skip-count += 1
+	v0 := DIFFICULTY_STEP
+	difficulty-loop += v0
+
+	if vf == 1 then difficulty-level += 1
+
 	if actual-key != NULL_KEY then good-splash
 	if actual-key == NULL_KEY then bad-splash
 
@@ -333,7 +356,6 @@
 ;
 
 : good-splash
-	skip-count += 1
 	v0 := ARC_STEP
 	vy += v0
 
@@ -347,6 +369,43 @@
 	vy := 0
 	expected-key := ABORT_KEY
 ;
+
+## Set Difficulty Level ########################################################
+: get-key-list
+	v0 := difficulty-level
+	v1 := 9
+
+	loop
+		while v0 >= v1
+		v0 -= v1
+	again
+
+	v0 <<= v0
+	jump0 difficulty-jump
+;
+
+: difficulty-jump
+	jump load-keylist-1
+	jump load-keylist-2
+	jump load-keylist-3
+	jump load-keylist-4
+	jump load-keylist-5
+	jump load-keylist-6
+	jump load-keylist-7
+	jump load-keylist-8
+	jump load-keylist-9
+;
+
+: load-keylist-1	i := key-list1 ;
+: load-keylist-2	i := key-list2 ;
+: load-keylist-3	i := key-list3 ;
+: load-keylist-4	i := key-list4 ;
+: load-keylist-5	i := key-list5 ;
+: load-keylist-6	i := key-list6 ;
+: load-keylist-7	i := key-list7 ;
+: load-keylist-8	i := key-list8 ;
+: load-keylist-9	i := key-list9 ;
+
 
 ## Stone travel arcs ########################################################
 # numbers are y offsets subtracted from WATER_SURFACE_Y
