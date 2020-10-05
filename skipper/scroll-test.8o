@@ -11,15 +11,20 @@
 :alias y v2
 :alias height v0
 
-# permanent  ##########################
+# alive only during landscape drawing
+:alias slice-index 		 v3	# which slice of a landscape we're drawing
+:alias background-step 	 v4 # which landscape we're drawing
+:alias background-length v5 # size of the current landscape
+
+# alive during skipping
 :alias difficulty-level  v3
 :alias difficulty-loop	 v4 # increment difficulty-level on overflow 
 :alias skip-count		 v5 # total number of skips 
 
-							# TODO save in memory to be made temporary?
-:alias slice-index 		 v6	# which slice of a landscape we're drawing
-:alias background-step 	 v7 # which landscape we're drawing
-:alias background-length v8 # size of the current landscape
+# permanent  ##########################
+
+:alias frame-delay			v6
+:alias frame-delay-counter 	v7
 
 :alias next-key-time v9
 :alias expected-key va
@@ -28,7 +33,7 @@
 :alias vy			vd # which stone arc we're using
 :alias vy-step		ve # position within arc 
 
-:const DIFFICULTY_STEP		26
+:const DIFFICULTY_STEP		45
 :const DIFFICULTY_ROLLOVER	10
 :const BACKGROUND_X 	124
 :const BACKGROUND_TOP_Y 10
@@ -45,6 +50,9 @@
 :calc ARC_MAX { ARC_TOTAL_STEPS * ARC_STEP }
 :calc ARC_START { ARC_STEP * 4 }
 :calc ARC_END { ARC_MAX - ARC_STEP }
+:const FRAME_DELAY_START 10
+:const FRAME_DELAY_CAP 	 3
+:const FRAME_DELAY_STEP	 80
 
 :macro draw-stone x y {
 	i := long rock
@@ -127,17 +135,25 @@
 	#i := arc-5
 	vy-step := 2
 	next-key-time := 0x5
+	frame-delay := FRAME_DELAY_START
+	frame-delay-counter := 0
 
 	difficulty-level := 0
 	difficulty-loop := 0
 	skip-count := 0
-	slice-index := 0
-	background-step := 0
 	expected-key := NULL_KEY
 	actual-key := NULL_KEY
-	
+
+	i := difficulty-memory
+	save difficulty-level - skip-count
+
+	slice-index := 0
+	background-step := 0
 	start-landscape
 
+	i := background-memory
+	save slice-index - background-length
+	
 	loop
 		draw-key
 
@@ -145,14 +161,22 @@
 		scroll-left
 	
 		draw-key
-		draw-next-slice
 
+		
+		i := background-memory
+		load slice-index - background-length
+		draw-next-slice
+		i := background-memory
+		save slice-index - background-length
+
+		i := difficulty-memory
+		load difficulty-level - skip-count
 		load-skip-arc
 		step-stone
-		#:breakpoint after-step
+		i := difficulty-memory
+		save difficulty-level - skip-count
 
-		vf := 10
-		delay := vf
+		delay := frame-delay
 		
 		loop
 			check-input
@@ -346,7 +370,15 @@
 	v0 := DIFFICULTY_STEP
 	difficulty-loop += v0
 
-	if vf == 1 then difficulty-level += 1
+	if vf == 1 begin 
+		difficulty-level += 1
+		
+		if frame-delay != FRAME_DELAY_CAP begin
+			vf := FRAME_DELAY_STEP
+			frame-delay-counter += vf
+			if vf == 1 then frame-delay += -1
+		end
+	end
 
 	if actual-key != NULL_KEY then good-splash
 	if actual-key == NULL_KEY then bad-splash
@@ -658,6 +690,9 @@
 	if expected-key == OCTO_KEY_E then i := note-simple-e
 	if expected-key == OCTO_KEY_R then i := note-simple-r
 ;
+
+: background-memory 0 0 0
+: difficulty-memory 0 0 0
 
 : rock 0xC0 0xC0
 : rock-mirror 0xC0 0x00
