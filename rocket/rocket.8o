@@ -4,13 +4,15 @@
 # Blend: #fff
 # Silence: #000d14
 
-:alias x v0
-:alias y v1
+:alias x v1
+:alias y v2
+
+:alias altitude ve
 
 : main
     hires
 
-    #########################
+    ## Startup #########################
     draw-game-start-scene
     plane 2
 
@@ -19,6 +21,32 @@
     v1 := 31
     sprite v0 v1 1
 
+    ## Wait for launch #########################
+    loop
+        v0 := 0x6
+        if v0 -key then
+    again
+
+    ## Launch #########################
+
+    ## Lift off #########################
+    x := 2
+    y := 31
+    v0 := 0
+    i := rocket-stage
+
+    loop
+        sprite x y 1
+        x += v0
+        v0 += 1
+        sprite x y 1
+
+        wait-for-frame
+
+        if x != 38 then
+    again
+
+    ## Fly #########################
     loop
         plane 2
         sprite v0 v1 1
@@ -29,13 +57,21 @@
         plane 2
         sprite v0 v1 1
 
-        vf := 10
-        delay := vf
-        
-        loop
-            vf := delay
-            if vf != 0 then
-        again
+        fill-next-slice
+        wait-for-frame
+
+        altitude += 1
+        if altitude != 255 then
+    again
+;
+
+: wait-for-frame
+    vf := 10
+    delay := vf
+    
+    loop
+        vf := delay
+        if vf != 0 then
     again
 ;
 
@@ -72,20 +108,78 @@
             sprite x y 15
             y += 15
 
+            if x > 64 begin
+                v0 := random 0b111
+                if v0 == 0 begin
+                    i := cloud-1
+                    
+                    plane 2
+                    sprite x y 15
+                    plane 1
+                    sprite x y 15
+                    
+                    i := sky-1
+                end
+            end
+
             if y != 75 then
         again
 
         x += 8
         y := 0 
 
-        if x == 32 then i := sky-2
-        if x == 64 then i := sky-3
-        if x == 96 then i := sky-4
-        if x == 120 then i := sky-5
+        #if x == 32 then i := sky-2
+        #if x == 64 then i := sky-3
+        #if x == 96 then i := sky-4
+        #if x == 120 then i := sky-5
 
         if x != 128 then
     again
 ;
+
+: fill-next-slice
+    v0 := altitude
+
+    # converts [0,255] to [0,7], except it's actually [0,15] for the jump
+    v0 >>= v0
+    v0 >>= v0
+    v0 >>= v0
+    v0 >>= v0
+    v0 >>= v0
+    v0 <<= v0
+
+    jump0 select-sky-jump
+;
+
+: draw-sky-slice
+    v3 := 120
+    v4 := 0
+
+    loop
+        sprite v3 v4 15
+
+        v4 += 15
+        if v4 != 75 then
+    again
+;
+
+
+: select-sky-jump
+    jump use-sky-1
+    jump use-sky-2
+    jump use-sky-2
+    jump use-sky-3
+    jump use-sky-3
+    jump use-sky-4
+    jump use-sky-4
+    jump use-sky-5
+;
+
+: use-sky-1     i := long sky-1 jump draw-sky-slice
+: use-sky-2     i := long sky-2 jump draw-sky-slice
+: use-sky-3     i := long sky-3 jump draw-sky-slice
+: use-sky-4     i := long sky-4 jump draw-sky-slice
+: use-sky-5     i := long sky-5 jump draw-sky-slice
 
 : ground-plane 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F
 : ground-trees 0x7F 0x57 0x0F 0x6F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x4F 0x07 0x4F 0x7F
@@ -99,3 +193,5 @@
 : sky-3 0x99 0x99 0x99 0x99 0xCC 0xCC 0xCC 0xCC 0x66 0x66 0x66 0x66 0x33 0x33 0x33
 : sky-4 0x44 0x44 0x44 0x44 0x22 0x22 0x22 0x22 0x11 0x11 0x11 0x11 0x88 0x88 0x88
 : sky-5 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: cloud-1 0x80 0xC0 0xA0 0x90 0x88 0x88 0x88 0x90 0x98 0xA4 0xC2 0x82 0x84 0x98 0xE0
