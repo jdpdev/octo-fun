@@ -1,0 +1,39 @@
+: main
+    hires
+
+    i := ground-plane
+    v0 := 8
+    v1 := 0
+    sprite v0 v1 8
+
+    i := ground-trees
+    v1 := 8
+    sprite v0 v1 8
+
+    i := ground-plane
+    v1 := 16
+    sprite v0 v1 8
+
+    i := ground-plane
+    v1 := 24
+    sprite v0 v1 8
+
+    i := ground-plane
+    v1 := 32
+    sprite v0 v1 8
+
+    i := ground-plane
+    v1 := 40
+    sprite v0 v1 8
+
+    i := ground-plane
+    v1 := 48
+    sprite v0 v1 8
+
+    i := ground-plane
+    v1 := 56
+    sprite v0 v1 8
+;
+
+: ground-plane 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0x80
+: ground-trees 0x80 0xA8 0xF0 0x90 0x80 0x80 0x80 0x80 0x80 0x80 0x80 0xB0 0xC8 0xB0 0x80
