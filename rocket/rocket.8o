@@ -4,22 +4,28 @@
 # Blend: #fff
 # Silence: #000d14
 
+# temps
 :alias x v1
 :alias y v2
+:alias launch-step v3
 
-:alias altitude ve
+# permanent
+:alias altitude-step    vd
+:alias altitude         ve
 
 :const ROCKET_X 38
 :const ROCKET_Y 31
+:const SMOKE_LEFT 23
+:const SMOKE_RIGHT 32
 
 : main
     hires
 
-    ## Startup #########################
+    ## Startup #################################
     draw-game-start-scene
     
     plane 3
-    i := rocket-stage-dual
+    i := long rocket-stage-dual
     v0 := 2
     v1 := 31
     sprite v0 v1 15
@@ -30,34 +36,61 @@
         if v0 -key then
     again
 
-    ## Launch #########################
+    ## Launch ##################################
 
-    ## Lift off #########################
-    x := 2
-    y := ROCKET_Y
-    v0 := 0
-    
-    plane 3
-    i := rocket-stage-dual
+# initial smoke
+    launch-step := 0
+
+    plane 2
+    i := long launch-smoke-left-1
+    x := 1
+    y := SMOKE_LEFT
+    sprite x y 8
+
+    i := long launch-smoke-right-1
+    x := 1
+    y := SMOKE_RIGHT
+    sprite x y 8
 
     loop
-        sprite x y 15
-        x += v0
-        v0 += 1
-        sprite x y 15
+        step-launch-smoke
+        wait-for-frame
+        if launch-step != 5 then
+    again
+
+    ## Lift off ################################
+    v0 := 0
+    altitude-step := 254
+    
+# prep rocket
+    plane 3
+    x := 2
+    y := ROCKET_Y
+    i := long rocket-stage-dual
+
+    loop
+        y := ROCKET_Y
+        altitude-step += v0
+        if v0 != 255 then v0 += 5
+
+        if vf == 1 begin
+            sprite x y 15
+            x += 1
+            sprite x y 15
+        end
 
         wait-for-frame
 
         if x != 38 then
     again
 
-    ## Fly #########################
+    ## Fly ####################################
     loop
         v0 := ROCKET_X
         v1 := ROCKET_Y
 
         plane 3
-        i := rocket-stage-dual
+        i := long rocket-stage-dual
         sprite v0 v1 15
         
         plane 3
@@ -87,24 +120,24 @@
 : draw-game-start-scene
     plane 1
 
-    i := ground-trees
+    i := long ground-trees
     v0 := 0
     v1 := 0
     sprite v0 v1 15
 
-    i := ground-plane
+    i := long ground-plane
     v1 := 15
     sprite v0 v1 15
 
-    i := ground-launcher
+    i := long ground-launcher
     v1 := 30
     sprite v0 v1 15
 
-    i := ground-trees
+    i := long ground-trees
     v1 := 45
     sprite v0 v1 15
 
-    i := ground-plane
+    i := long ground-plane
     v1 := 60
     sprite v0 v1 15
 		
@@ -120,14 +153,14 @@
             if x > 64 begin
                 v0 := random 0b111
                 if v0 == 0 begin
-                    i := cloud-1
+                    i := long cloud-1
                     
                     plane 2
                     sprite x y 15
                     plane 1
                     sprite x y 15
                     
-                    i := sky-full
+                    i := long sky-full
                 end
             end
 
@@ -173,7 +206,6 @@
     again
 ;
 
-
 : select-sky-jump
     jump use-sky-1
     jump use-sky-2
@@ -191,6 +223,40 @@
 : use-sky-4     i := long sky-4 jump draw-sky-slice
 : use-sky-5     i := long sky-5 jump draw-sky-slice
 
+: step-launch-smoke
+    if launch-step == 5 then return
+
+    pick-launch-smoke
+    launch-step += 1
+    pick-launch-smoke
+;
+
+: pick-launch-smoke
+    v0 := launch-step
+    v0 <<= v0
+    jump0 select-launch-smoke
+;
+
+: select-launch-smoke
+    jump use-launch-smoke-1
+    jump use-launch-smoke-1
+    jump use-launch-smoke-2
+    jump use-launch-smoke-2
+    jump use-launch-smoke-3
+    jump use-launch-smoke-3
+;
+
+: use-launch-smoke-1 i := long launch-smoke-left-1 jump draw-launch-smoke
+: use-launch-smoke-2 i := long launch-smoke-left-2 jump draw-launch-smoke
+: use-launch-smoke-3 i := long launch-smoke-left-3 jump draw-launch-smoke
+
+: draw-launch-smoke
+    plane 2
+    v0 := 1
+    y := SMOKE_LEFT
+    sprite v0 y 8
+;
+
 : ground-plane 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F
 : ground-trees 0x7F 0x57 0x0F 0x6F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x4F 0x07 0x4F 0x7F
 : ground-launcher 0x3F 0x3F 0x39 0x01 0x7F 0x3F 0x3F 0x3F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F
@@ -207,3 +273,11 @@
 : sky-5 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
 
 : cloud-1 0x80 0xC0 0xA0 0x90 0x88 0x88 0x88 0x90 0x98 0xA4 0xC2 0x82 0x84 0x98 0xE0
+
+: launch-smoke-left-1 0x00 0x00 0x00 0x00 0xC0 0xE0 0xC0 0x80
+: launch-smoke-left-2 0x00 0x30 0x68 0xC8 0x90 0xA0 0xC0 0x80
+: launch-smoke-left-3 0x38 0x6C 0xD2 0xAD 0x52 0xCC 0x80 0x80
+
+: launch-smoke-right-1 0x80 0xC0 0xE0 0xC0 0x00 0x00 0x00 0x00 
+: launch-smoke-right-2 0x80 0xC0 0xA0 0x90 0xC8 0x68 0x30 0x00
+: launch-smoke-right-3 0x80 0x80 0xCC 0x52 0xAD 0xD2 0x6C 0x38
