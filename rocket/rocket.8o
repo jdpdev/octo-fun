@@ -80,33 +80,7 @@
         v0 := v4
         altitude-step += v0
         if v0 != 255 then v0 += 5
-
-        if vf == 1 begin
-
-        # plume
-            v5 := random 0b11
-            y += -1
-
-            plane 2
-            if v5 == 0 then i := long exhaust-plume-1
-            if v5 == 1 then i := long exhaust-plume-2
-            if v5 == 2 then i := long exhaust-plume-3
-            if v5 == 3 then i := long exhaust-plume-4
-
-            x += -4
-            sprite x y 5
-            x += 4
-
-        # rocket
-            y += 1
-            plane 3
-            i := long rocket-stage-dual
-            sprite x y 15
-
-            x += 1
-            altitude := x
-            sprite x y 15
-        end
+        if vf == 1 then lift-off-draw-rocket
 
         wait-for-frame
 
@@ -119,8 +93,18 @@
     loop
         v0 := ROCKET_X
         v1 := ROCKET_Y
+        v3 := 0b1
+        v4 := altitude
+        v3 &= v4
 
         plane 3
+        v0 += -3
+        v1 += -1
+        if v3 == 0 then i := long blast-tail-1
+        if v3 == 1 then i := long blast-tail-2
+        sprite v0 v1 15
+        v0 += 3
+        v1 += 1
         i := long rocket-stage-dual
         sprite v0 v1 15
         
@@ -129,6 +113,11 @@
 
         plane 3
         sprite v0 v1 15
+        v0 += -3
+        v1 += -1
+        if v3 == 0 then i := long blast-tail-2
+        if v3 == 1 then i := long blast-tail-1
+        sprite v0 v1 15
 
         fill-next-slice
         wait-for-frame
@@ -136,6 +125,32 @@
         altitude += 1
         if altitude != 255 then
     again
+;
+
+: lift-off-draw-rocket
+# plume
+    v5 := random 0b11
+    y += -1
+
+    plane 2
+    if v5 == 0 then i := long exhaust-plume-1
+    if v5 == 1 then i := long exhaust-plume-2
+    if v5 == 2 then i := long exhaust-plume-3
+    if v5 == 3 then i := long exhaust-plume-4
+
+    x += -4
+    sprite x y 5
+    x += 4
+
+# rocket
+    y += 1
+    plane 3
+    i := long rocket-stage-dual
+    sprite x y 15
+
+    x += 1
+    altitude := x
+    sprite x y 15
 ;
 
 : wait-for-frame
@@ -389,7 +404,8 @@
 : launch-smoke-right-9  0x40 0x80 0x90 0x00 0xA8 0xC0 0x42 0x81 0x60 0xC9 0x80 0x48 0x10 0xA2   
 : launch-smoke-right-10 0x40 0x00 0xA0 0x00 0x40 0x80 0x00 0x10 0xA0 0x02 0x20 0x44 0x90 0x28
 
-: blast-tail-1 0x20 0xC0 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x20 0xC0 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: blast-tail-1 0x00 0x20 0xC0 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x20 0xC0 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: blast-tail-2 0x20 0x40 0x80 0x40 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x20 0x40 0x80 0x40 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
 
 : exhaust-plume-1 0x40 0xB0 0x60 0x90 0x40
 : exhaust-plume-2 0x40 0x90 0x60 0xB0 0x40
