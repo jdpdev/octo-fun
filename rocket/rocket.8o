@@ -4,9 +4,97 @@
 # Blend: #fff
 # Silence: #000d14
 
-# temps
 :alias x v1
 :alias y v2
+
+: main
+    hires
+    builder-loop
+    game-loop
+;
+
+############################################################
+# Builder
+############################################################
+# temp
+
+# permanent
+:alias selected-bot-stage    v1
+:alias selected-mid-stage    v2
+:alias selected-top-stage    v3
+:alias current-stage         v4
+
+:alias count-bot-stage       v5
+:alias unlock-bot-stage      v6
+:alias count-mid-stage       v7
+:alias unlock-mid-stage      v8
+:alias count-top-stage       v9
+:alias unlock-top-stage      va
+
+:alias stage-offset          vb
+:alias stage-height          vc
+
+:const BOTTOM_STAGE 0
+:const MIDDLE_STAGE 1
+:const TOP_STAGE 2
+:const NO_STAGE -1
+:const SHIP_Y 18
+:const UI_Y 36
+:const BOTTOM_STAGE_X 24
+
+: builder-loop
+    current-stage := BOTTOM_STAGE
+    selected-bot-stage := 0
+    selected-mid-stage := NO_STAGE
+    selected-top-stage := NO_STAGE
+    
+    i := builder-data
+    load count-bot-stage - unlock-top-stage
+
+    apply-bottom-stage
+
+    loop
+        v0 := key
+    again
+;
+
+: apply-bottom-stage
+    v0 := selected-bot-stage
+    v0 <<= v0
+    v0 <<= v0
+
+    i := bottom-stage-data
+    load stage-offset - stage-height
+    :breakpoint loaded-stage-data
+
+    v0 := stage-offset
+    jump0 stage-bottom-jump
+;
+
+: draw-bottom-stage
+    :breakpoint which-stage
+    x := BOTTOM_STAGE_X
+    y := SHIP_Y
+    plane 1
+    sprite x y 15
+
+    x += -6
+    y := UI_Y
+    v0 := 0
+    loop
+        i := builder-ui-dot
+        sprite x y 1
+        y += 2
+        v0 += 1
+
+        if v0 != unlock-bot-stage then
+    again
+;
+
+############################################################
+# Game
+############################################################
+# temps
 :alias launch-step v3
 
 # permanent
@@ -19,11 +107,6 @@
 :const SMOKE_RIGHT 32
 :const LAUNCH_STEP_COUNT 19
 :const LAUNCH_STEP_LAUNCH 5
-
-: main
-    hires
-    game-loop
-;
 
 : game-loop
     clear
@@ -416,3 +499,29 @@
 : exhaust-plume-2 0x40 0x90 0x60 0xB0 0x40
 : exhaust-plume-3 0x60 0xB0 0x80 0x10 0x80
 : exhaust-plume-4 0x20 0x30 0x80 0x30 0xA0
+
+# num bottom stages | unlocked bottom | num middle stages | unlocked middle | num top stages | unlocked top
+: builder-data 4 4 0 0 0 0
+
+# bottom stage | middle stage | top stage
+: rocket-data 0 0 0
+
+# jump offset | is tall | fuel amount | ???
+: bottom-stage-data
+    0  0 10 0
+    6  1 20 0
+    12 0 30 0
+    18 1 40 0
+
+: builder-ui-dot 0x80
+
+: stage-bottom-jump
+    i := long stage-bottom-short-thin-1     jump draw-bottom-stage
+    i := long stage-bottom-tall-thin-1      jump draw-bottom-stage
+    i := long stage-bottom-short-fat-1      jump draw-bottom-stage
+    i := long stage-bottom-tall-fat-1       jump draw-bottom-stage
+
+: stage-bottom-short-thin-1   0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x3C 0x24 0x24 0x24 0x24 0x24 0x24 0x18
+: stage-bottom-tall-thin-1    0x3C 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x18
+: stage-bottom-short-fat-1    0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xFF 0xA5 0xA5 0xA5 0xA5 0xA5 0xA5 0x7E
+: stage-bottom-tall-fat-1     0xFF 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x7E
