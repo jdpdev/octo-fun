@@ -57,6 +57,7 @@
     apply-bottom-stage
     apply-middle-stage
     apply-top-stage
+    draw-stage-arrow
 
     loop
         v1 := key
@@ -78,13 +79,28 @@
 ;
 
 : stage-up
+    draw-stage-arrow
     current-stage += 2
     if current-stage == STAGE_TOO_FAR then current-stage := BOTTOM_STAGE
+    draw-stage-arrow
 ;
 
 : stage-down
+    draw-stage-arrow
     current-stage += -2
     if current-stage == -2 then current-stage := TOP_STAGE
+    draw-stage-arrow
+;
+
+: draw-stage-arrow
+    if current-stage == BOTTOM_STAGE    then x := BOTTOM_STAGE_X
+    if current-stage == MIDDLE_STAGE    then x := MIDDLE_STAGE_X
+    if current-stage == TOP_STAGE       then x := TOP_STAGE_X
+
+    y := 4
+    i := long builder-ui-arrow
+    plane 1
+    sprite x y 7
 ;
 
 :macro select-previous-item draw selected-item min max {
@@ -646,6 +662,7 @@
     24 1 40 0
 
 : builder-ui-dot 0x80
+: builder-ui-arrow 0x18 0x18 0x99 0xDB 0x7E 0x3C 0x18
 
 : stage-bottom-jump
     i := long stage-bottom-short-thin-1     jump draw-bottom-stage
