@@ -8,7 +8,6 @@
 :alias y v2
 
 : main
-    hires
     builder-loop
     game-loop
 ;
@@ -19,20 +18,20 @@
 # temp
 
 # permanent
-:alias selected-bot-stage    v1
-:alias selected-mid-stage    v2
-:alias selected-top-stage    v3
-:alias current-stage         v4
+:alias selected-bot-stage    v3
+:alias selected-mid-stage    v4
+:alias selected-top-stage    v5
+:alias current-stage         v6
 
-:alias count-bot-stage       v5
-:alias unlock-bot-stage      v6
-:alias count-mid-stage       v7
-:alias unlock-mid-stage      v8
-:alias count-top-stage       v9
-:alias unlock-top-stage      va
+:alias count-bot-stage       v7
+:alias unlock-bot-stage      v8
+:alias count-mid-stage       v9
+:alias unlock-mid-stage      va
+:alias count-top-stage       vb
+:alias unlock-top-stage      vc
 
-:alias stage-offset          vb
-:alias stage-height          vc
+:alias stage-offset          vd
+:alias stage-height          ve
 
 :const BOTTOM_STAGE 0
 :const MIDDLE_STAGE 1
@@ -43,6 +42,8 @@
 :const BOTTOM_STAGE_X 24
 
 : builder-loop
+    hires
+
     current-stage := BOTTOM_STAGE
     selected-bot-stage := 0
     selected-mid-stage := NO_STAGE
@@ -55,7 +56,32 @@
 
     loop
         v0 := key
+        if v0 == 7 then select-previous
+        if v0 == 9 then select-next
     again
+;
+
+: select-previous
+    #:breakpoint previous
+    apply-bottom-stage
+    
+    selected-bot-stage += -1
+    if selected-bot-stage == 0 begin 
+        selected-bot-stage := unlock-bot-stage
+        selected-bot-stage += -1
+    end
+    
+    apply-bottom-stage
+;
+
+: select-next
+    #:breakpoint next
+    apply-bottom-stage
+
+    selected-bot-stage += 1
+    if selected-bot-stage == unlock-bot-stage then selected-bot-stage := 0
+
+    apply-bottom-stage
 ;
 
 : apply-bottom-stage
@@ -64,29 +90,34 @@
     v0 <<= v0
 
     i := bottom-stage-data
+    i += v0
     load stage-offset - stage-height
-    :breakpoint loaded-stage-data
 
     v0 := stage-offset
     jump0 stage-bottom-jump
 ;
 
 : draw-bottom-stage
-    :breakpoint which-stage
     x := BOTTOM_STAGE_X
     y := SHIP_Y
     plane 1
-    sprite x y 15
+    sprite x y 0
 
-    x += -6
+    x += 12
     y := UI_Y
     v0 := 0
     loop
         i := builder-ui-dot
         sprite x y 1
+        
+        if v0 == selected-bot-stage begin
+            plane 2
+            sprite x y 1
+            plane 1
+        end
+
         y += 2
         v0 += 1
-
         if v0 != unlock-bot-stage then
     again
 ;
@@ -110,6 +141,7 @@
 
 : game-loop
     clear
+    hires
     
     ## Startup #################################
     draw-game-start-scene
@@ -521,7 +553,7 @@
     i := long stage-bottom-short-fat-1      jump draw-bottom-stage
     i := long stage-bottom-tall-fat-1       jump draw-bottom-stage
 
-: stage-bottom-short-thin-1   0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x3C 0x24 0x24 0x24 0x24 0x24 0x24 0x18
-: stage-bottom-tall-thin-1    0x3C 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x24 0x18
-: stage-bottom-short-fat-1    0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xFF 0xA5 0xA5 0xA5 0xA5 0xA5 0xA5 0x7E
-: stage-bottom-tall-fat-1     0xFF 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x81 0x7E
+: stage-bottom-short-thin-1   0x00 0x00 0x00 0x00 0x7F 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x7F 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-bottom-tall-thin-1    0x00 0x00 0x00 0x00 0x7F 0xFF 0x80 0x01 0xFF 0xFF 0x80 0x01 0x7F 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-bottom-short-fat-1    0x7F 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x81 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x7F 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-bottom-tall-fat-1     0x7F 0xFF 0x80 0x01 0xFF 0xFF 0x80 0x01 0x80 0x01 0x80 0x01 0xFF 0xFF 0x80 0x01 0x7F 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
