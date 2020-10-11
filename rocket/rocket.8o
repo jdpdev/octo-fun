@@ -239,9 +239,11 @@
 :alias altitude         ve
 
 # cache rocket sprite offsets
-:alias game-bottom-stage-offset v7
-:alias game-middle-stage-offset v8
-:alias game-top-stage-offset    v9
+:alias game-bottom-stage-offset   v6
+:alias game-bottom-stage-x-offset v7
+:alias game-middle-stage-offset   v8
+:alias game-middle-stage-x-offset v9
+:alias game-top-stage-offset      va
 
 :const ROCKET_X 38
 :const ROCKET_Y 30
@@ -262,14 +264,14 @@
     v0 <<= v0
     v0 <<= v0
     i += v0
-    load game-bottom-stage-offset - game-bottom-stage-offset
+    load game-bottom-stage-offset - game-bottom-stage-x-offset
     game-bottom-stage-offset += 6 # there is no empty bottom stage
 
     i := middle-stage-data
     v1 <<= v1
     v1 <<= v1
     i += v1
-    load game-middle-stage-offset - game-middle-stage-offset
+    load game-middle-stage-offset - game-middle-stage-x-offset
 
     i := top-stage-data
     v2 <<= v2
@@ -411,13 +413,13 @@
     sprite v5 y 3
 
     # mid
-    v5 += 8
+    v5 += game-bottom-stage-x-offset
     i := long rocket-stage
     i += game-middle-stage-offset
     sprite v5 y 3
 
     # top
-    v5 += 8
+    v5 += game-middle-stage-x-offset
     i := long rocket-stage
     i += game-top-stage-offset
     sprite v5 y 3
@@ -647,11 +649,6 @@
     0xF0 0xF0 0xF0 0xF0 0xF0 0xF0   # short-fat (18)
     0xFF 0xFF 0xFF 0xFF 0xFF 0xFF   # long-fat (24)
 
-: rocket-stage-short-thin   0x00 0xF0 0x00 0x00 0xF0 0x00
-: rocket-stage-short-fat    0xF0 0xF0 0xF0 0xF0 0xF0 0xF0
-: rocket-stage-long-thin    0x00 0xFF 0x00 0x00 0xFF 0x00
-: rocket-stage-long-fat     0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
-
 : sky-full 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
 : sky-1 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0
 : sky-2 0x70 0xF0 0x70 0xF0 0xB0 0xF0 0xB0 0xF0 0xD0 0xF0 0xD0 0xF0 0xF0 0xE0 0xF0
@@ -699,22 +696,22 @@
 
 # jump offset | is tall | fuel amount | ???
 : bottom-stage-data
-    0  0 10 0
-    6  1 20 0
-    12 0 30 0
-    18 1 40 0
+    0  4 10 0
+    6  8 20 0
+    12 4 30 0
+    18 8 40 0
 : middle-stage-data
     0  0 0 0
-    6  0 10 0
-    12 1 20 0
-    18 0 30 0
-    24 1 40 0
+    6  4 10 0
+    12 8 20 0
+    18 4 30 0
+    24 8 40 0
 : top-stage-data
     0  0 0 0
-    6  0 10 0
-    12 1 20 0
-    18 0 30 0
-    24 1 40 0
+    6  4 10 0
+    12 8 20 0
+    18 4 30 0
+    24 8 40 0
 
 : builder-ui-dot 0x80
 : builder-ui-arrow 0x18 0x18 0x99 0xDB 0x7E 0x3C 0x18
