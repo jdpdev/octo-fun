@@ -61,9 +61,15 @@
 
     loop
         v1 := key
-        if v1 == 6 then return
+        if v1 == 6 then jump launch-rocket
         read-input
     again
+;
+
+: launch-rocket
+    #:breakpoint save-rocket-data
+    i := rocket-data
+    save selected-bot-stage - selected-top-stage
 ;
 
 : read-input
@@ -72,10 +78,6 @@
     if v1 == OCTO_KEY_D then jump0 select-next
     if v1 == OCTO_KEY_W then jump stage-up
     if v1 == OCTO_KEY_S then jump stage-down
-;
-
-: launch-rocket
-    
 ;
 
 : stage-up
@@ -229,12 +231,17 @@
 ############################################################
 # Game
 ############################################################
-# temps
+### temps
 :alias launch-step v3
 
-# permanent
+### permanent
 :alias altitude-step    vd
 :alias altitude         ve
+
+# cache rocket sprite offsets
+:alias game-bottom-stage-offset v7
+:alias game-middle-stage-offset v8
+:alias game-top-stage-offset    v9
 
 :const ROCKET_X 38
 :const ROCKET_Y 30
@@ -246,15 +253,36 @@
 : game-loop
     clear
     hires
+
+    ## cache rocket information
+    i := rocket-data
+    load v2
     
+    i := bottom-stage-data
+    v0 <<= v0
+    v0 <<= v0
+    i += v0
+    load game-bottom-stage-offset - game-bottom-stage-offset
+    game-bottom-stage-offset += 6 # there is no empty bottom stage
+
+    i := middle-stage-data
+    v1 <<= v1
+    v1 <<= v1
+    i += v1
+    load game-middle-stage-offset - game-middle-stage-offset
+
+    i := top-stage-data
+    v2 <<= v2
+    v2 <<= v2
+    i += v2
+    load game-top-stage-offset - game-top-stage-offset
+
     ## Startup #################################
     draw-game-start-scene
     
-    plane 3
-    i := long rocket-stage-dual
-    v0 := 2
-    v1 := ROCKET_Y
-    sprite v0 v1 15
+    x := 2
+    y := ROCKET_Y
+    draw-rocket
 
     ## Wait for launch #########################
     loop
@@ -292,7 +320,6 @@
     plane 3
     altitude := 2
     y := ROCKET_Y
-    i := long rocket-stage-dual
 
     loop
         v4 := v0
@@ -315,33 +342,31 @@
     altitude := 0
 
     loop
-        v0 := ROCKET_X
-        v1 := ROCKET_Y
+        x := ROCKET_X
+        y := ROCKET_Y
         v3 := 0b1
         v4 := altitude
         v3 &= v4
 
         plane 3
-        v0 += -3
-        v1 += -1
+        x += -3
+        y += -1
         if v3 == 0 then i := long blast-tail-1
         if v3 == 1 then i := long blast-tail-2
-        sprite v0 v1 15
-        v0 += 3
-        v1 += 1
-        i := long rocket-stage-dual
-        sprite v0 v1 15
-        
-        plane 3
-        scroll-left
+        sprite x y 15
 
-        plane 3
-        sprite v0 v1 15
-        v0 += -3
-        v1 += -1
+        x += 3
+        y += 1
+        draw-rocket
+
+        scroll-left
+        draw-rocket
+
+        x += -3
+        y += -1
         if v3 == 0 then i := long blast-tail-2
         if v3 == 1 then i := long blast-tail-1
-        sprite v0 v1 15
+        sprite x y 15
 
         fill-next-slice
         wait-for-frame
@@ -368,13 +393,34 @@
 
 # rocket
     y += 1
-    plane 3
-    i := long rocket-stage-dual
-    sprite x y 15
+    draw-rocket
 
     x += 1
+    draw-rocket
     altitude := x
-    sprite x y 15
+;
+
+# set x and y aliases to position
+: draw-rocket
+    plane 3
+    v5 := x
+
+    # bottom
+    i := long rocket-stage
+    i += game-bottom-stage-offset
+    sprite v5 y 3
+
+    # mid
+    v5 += 8
+    i := long rocket-stage
+    i += game-middle-stage-offset
+    sprite v5 y 3
+
+    # top
+    v5 += 8
+    i := long rocket-stage
+    i += game-top-stage-offset
+    sprite v5 y 3
 ;
 
 : wait-for-frame
@@ -594,8 +640,17 @@
 : ground-launcher 0x3F 0x3F 0x39 0x01 0x7F 0x3F 0x3F 0x3F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F
 : ground-pad 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x3F 0x3F
 
-: rocket-stage 0x00 0xF0
-: rocket-stage-dual 0x00 0xE0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xE0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: rocket-stage
+    0x00 0x00 0x00 0x00 0x00 0x00   # none (0)
+    0x00 0xF0 0x00 0x00 0xF0 0x00   # short thin (6)
+    0x00 0xFF 0x00 0x00 0xFF 0x00   # long-thin (12)
+    0xF0 0xF0 0xF0 0xF0 0xF0 0xF0   # short-fat (18)
+    0xFF 0xFF 0xFF 0xFF 0xFF 0xFF   # long-fat (24)
+
+: rocket-stage-short-thin   0x00 0xF0 0x00 0x00 0xF0 0x00
+: rocket-stage-short-fat    0xF0 0xF0 0xF0 0xF0 0xF0 0xF0
+: rocket-stage-long-thin    0x00 0xFF 0x00 0x00 0xFF 0x00
+: rocket-stage-long-fat     0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
 
 : sky-full 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
 : sky-1 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0
