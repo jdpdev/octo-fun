@@ -232,25 +232,57 @@
 # Game
 ############################################################
 ### temps
-:alias launch-step v3
+:alias launch-step v7
 
 ### permanent
-:alias altitude-step    vd
-:alias altitude         ve
+:alias fuel-amount      v8
+:alias fuel-step        v9
 
 # cache rocket sprite offsets
-:alias game-bottom-stage-offset   v6
-:alias game-bottom-stage-x-offset v7
-:alias game-middle-stage-offset   v8
-:alias game-middle-stage-x-offset v9
-:alias game-top-stage-offset      va
+:alias game-bottom-stage-data-offset   va
+:alias game-middle-stage-data-offset   vb
+:alias game-top-stage-data-offset      vc
+
+:alias altitude-step    vd
+:alias altitude         ve
 
 :const ROCKET_X 38
 :const ROCKET_Y 30
 :const SMOKE_LEFT 16
 :const SMOKE_RIGHT 32
 :const LAUNCH_STEP_COUNT 19
-:const LAUNCH_STEP_LAUNCH 5
+:const LAUNCH_STEP_LAUNCH 2
+
+:macro get-stage-data-offset in out temp {
+    temp := 0b00001111
+    out := in
+    out &= temp
+}
+
+:macro set-stage-data-offset value to temp {
+    temp := 0b11110000
+    to &= temp
+    to += value
+}
+
+:macro get-stage-x-offset in out {
+    out := in
+    out >>= out
+    out >>= out
+    out >>= out
+    out >>= out
+}
+
+:macro set-stage-x-offset value to temp {
+    value <<= value
+    value <<= value
+    value <<= value
+    value <<= value
+
+    temp := 0b00001111
+    to &= temp
+    to += value
+}
 
 : game-loop
     clear
@@ -264,20 +296,26 @@
     v0 <<= v0
     v0 <<= v0
     i += v0
-    load game-bottom-stage-offset - game-bottom-stage-x-offset
-    game-bottom-stage-offset += 6 # there is no empty bottom stage
+
+    load v4 - v5
+    v4 += 6         # there is no empty bottom stage
+    set-stage-data-offset   v4 game-bottom-stage-data-offset ve
+    set-stage-x-offset      v5 game-bottom-stage-data-offset ve
 
     i := middle-stage-data
     v1 <<= v1
     v1 <<= v1
     i += v1
-    load game-middle-stage-offset - game-middle-stage-x-offset
+    load v4 - v5
+    set-stage-data-offset   v4 game-middle-stage-data-offset ve
+    set-stage-x-offset      v5 game-middle-stage-data-offset ve
 
     i := top-stage-data
     v2 <<= v2
     v2 <<= v2
     i += v2
-    load game-top-stage-offset - game-top-stage-offset
+    load v4 - v4
+    set-stage-data-offset   v4 game-top-stage-data-offset ve
 
     ## Startup #################################
     draw-game-start-scene
@@ -346,15 +384,14 @@
     loop
         x := ROCKET_X
         y := ROCKET_Y
-        v3 := 0b1
-        v4 := altitude
-        v3 &= v4
+        v0 := 0b1
+        v0 &= altitude
 
         plane 3
         x += -3
         y += -1
-        if v3 == 0 then i := long blast-tail-1
-        if v3 == 1 then i := long blast-tail-2
+        if v0 == 0 then i := long blast-tail-1
+        if v0 == 1 then i := long blast-tail-2
         sprite x y 15
 
         x += 3
@@ -366,8 +403,8 @@
 
         x += -3
         y += -1
-        if v3 == 0 then i := long blast-tail-2
-        if v3 == 1 then i := long blast-tail-1
+        if v0 == 0 then i := long blast-tail-2
+        if v0 == 1 then i := long blast-tail-1
         sprite x y 15
 
         fill-next-slice
@@ -408,20 +445,25 @@
     v5 := x
 
     # bottom
+    get-stage-data-offset   game-bottom-stage-data-offset v3 vf
     i := long rocket-stage
-    i += game-bottom-stage-offset
+    i += v3
     sprite v5 y 3
 
     # mid
-    v5 += game-bottom-stage-x-offset
+    get-stage-x-offset      game-bottom-stage-data-offset v3
+    v5 += v3
+    get-stage-data-offset   game-middle-stage-data-offset v3 vf
     i := long rocket-stage
-    i += game-middle-stage-offset
+    i += v3
     sprite v5 y 3
 
     # top
-    v5 += game-middle-stage-x-offset
+    get-stage-x-offset      game-middle-stage-data-offset v3
+    v5 += v3
+    get-stage-data-offset   game-top-stage-data-offset v3 vf
     i := long rocket-stage
-    i += game-top-stage-offset
+    i += v3
     sprite v5 y 3
 ;
 
