@@ -244,6 +244,9 @@
 :alias fuel-step        v9
 
 # cache rocket sprite offsets
+# only allows 10 stages when offset is saved as offset
+# TODO 1: save offset as index and expand
+# TODO 2: load offset as needed
 :alias game-bottom-stage-data-offset   va
 :alias game-middle-stage-data-offset   vb
 :alias game-top-stage-data-offset      vc
