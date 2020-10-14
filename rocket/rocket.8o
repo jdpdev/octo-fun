@@ -12,6 +12,12 @@
     game-loop
 ;
 
+:macro stage-data-index-shift index {
+    index <<= index
+    index <<= index
+    index <<= index
+}
+
 ############################################################
 # Builder
 ############################################################
@@ -164,8 +170,7 @@
 
 :macro apply-stage selected-item data jump-table {
     v0 := selected-item
-    v0 <<= v0
-    v0 <<= v0
+    stage-data-index-shift v0
 
     i := data
     i += v0
@@ -254,19 +259,21 @@
 :const LAUNCH_STEP_LAUNCH 2
 
 :macro get-stage-data-offset in out temp {
-    temp := 0b00001111
+    temp := 0b00111111
     out := in
     out &= temp
 }
 
 :macro set-stage-data-offset value to temp {
-    temp := 0b11110000
+    temp := 0b11000000
     to &= temp
     to += value
 }
 
 :macro get-stage-x-offset in out {
     out := in
+    out >>= out
+    out >>= out
     out >>= out
     out >>= out
     out >>= out
@@ -278,8 +285,10 @@
     value <<= value
     value <<= value
     value <<= value
+    value <<= value
+    value <<= value
 
-    temp := 0b00001111
+    temp := 0b00111111
     to &= temp
     to += value
 }
@@ -293,8 +302,7 @@
     load v2
     
     i := bottom-stage-data
-    v0 <<= v0
-    v0 <<= v0
+    stage-data-index-shift v0
     i += v0
 
     load v4 - v5
@@ -303,16 +311,14 @@
     set-stage-x-offset      v5 game-bottom-stage-data-offset ve
 
     i := middle-stage-data
-    v1 <<= v1
-    v1 <<= v1
+    stage-data-index-shift v1
     i += v1
     load v4 - v5
     set-stage-data-offset   v4 game-middle-stage-data-offset ve
     set-stage-x-offset      v5 game-middle-stage-data-offset ve
 
     i := top-stage-data
-    v2 <<= v2
-    v2 <<= v2
+    stage-data-index-shift v2
     i += v2
     load v4 - v4
     set-stage-data-offset   v4 game-top-stage-data-offset ve
@@ -535,19 +541,13 @@
 ;
 
 : fill-next-slice
-    v0 := altitude
+    i := long next-slice-index-table
+    i += altitude
 
-    # converts [0,255] to [0,7], except it's actually [0,15] for the jump
-    v0 >>= v0
-    v0 >>= v0
-    v0 >>= v0
-    v0 >>= v0
-    v0 >>= v0
-    v0 <<= v0
-
+    load v0
     jump0 select-sky-jump
-;
-
+; 
+ 
 : draw-sky-slice
     v3 := 124
     v4 := 0
@@ -691,6 +691,17 @@
     0xF0 0xF0 0xF0 0xF0 0xF0 0xF0   # short-fat (18)
     0xFF 0xFF 0xFF 0xFF 0xFF 0xFF   # long-fat (24)
 
+# jump index to which sky to use for each altitude value
+: next-slice-index-table
+    0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  
+    2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  
+    4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  
+    6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  
+    8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  
+    10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 
+    12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 
+    14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14
+
 : sky-full 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
 : sky-1 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0
 : sky-2 0x70 0xF0 0x70 0xF0 0xB0 0xF0 0xB0 0xF0 0xD0 0xF0 0xD0 0xF0 0xF0 0xE0 0xF0
@@ -736,24 +747,24 @@
 # bottom stage | middle stage | top stage
 : rocket-data 0 0 0
 
-# jump offset | is tall | fuel amount | ???
+# jump offset | world x offset | fuel amount | ???
 : bottom-stage-data
-    0  4 10 0
-    6  8 20 0
-    12 4 30 0
-    18 8 40 0
+    0  4 10 0 0 0 0 0 
+    6  8 20 0 0 0 0 0 
+    12 4 30 0 0 0 0 0 
+    18 8 40 0 0 0 0 0 
 : middle-stage-data
-    0  0 0 0
-    6  4 10 0
-    12 8 20 0
-    18 4 30 0
-    24 8 40 0
+    0  0 0  0 0 0 0 0 # no stage
+    6  4 10 0 0 0 0 0
+    12 8 20 0 0 0 0 0
+    18 4 30 0 0 0 0 0
+    24 8 40 0 0 0 0 0
 : top-stage-data
-    0  0 0 0
-    6  4 10 0
-    12 8 20 0
-    18 4 30 0
-    24 8 40 0
+    0  0 0  0 0 0 0 0 # no stage
+    6  4 10 0 0 0 0 0
+    12 8 20 0 0 0 0 0
+    18 4 30 0 0 0 0 0
+    24 8 40 0 0 0 0 0
 
 : builder-ui-dot 0x80
 : builder-ui-arrow 0x18 0x18 0x99 0xDB 0x7E 0x3C 0x18
