@@ -682,6 +682,26 @@
     sprite x y 15
 ;
 
+: stage-bottom-jump
+    i := long stage-bottom-short-thin-1     jump draw-bottom-stage
+    i := long stage-bottom-tall-thin-1      jump draw-bottom-stage
+    i := long stage-bottom-short-fat-1      jump draw-bottom-stage
+    i := long stage-bottom-tall-fat-1       jump draw-bottom-stage
+
+: stage-middle-jump
+    i := long stage-middle-none             jump draw-middle-stage
+    i := long stage-middle-short-thin-1     jump draw-middle-stage
+    i := long stage-middle-tall-thin-1      jump draw-middle-stage
+    i := long stage-middle-short-fat-1      jump draw-middle-stage
+    i := long stage-middle-tall-fat-1       jump draw-middle-stage
+
+: stage-top-jump
+    i := long stage-top-none             jump draw-top-stage
+    i := long stage-top-short-thin-1     jump draw-top-stage
+    i := long stage-top-tall-thin-1      jump draw-top-stage
+    i := long stage-top-short-fat-1      jump draw-top-stage
+    i := long stage-top-tall-fat-1       jump draw-top-stage
+
 : ground-plane 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F
 : ground-trees 0x7F 0x57 0x0F 0x6F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x4F 0x07 0x4F 0x7F
 : ground-launcher 0x3F 0x3F 0x39 0x01 0x7F 0x3F 0x3F 0x3F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F
@@ -771,26 +791,6 @@
 
 : builder-ui-dot 0x80
 : builder-ui-arrow 0x18 0x18 0x99 0xDB 0x7E 0x3C 0x18
-
-: stage-bottom-jump
-    i := long stage-bottom-short-thin-1     jump draw-bottom-stage
-    i := long stage-bottom-tall-thin-1      jump draw-bottom-stage
-    i := long stage-bottom-short-fat-1      jump draw-bottom-stage
-    i := long stage-bottom-tall-fat-1       jump draw-bottom-stage
-
-: stage-middle-jump
-    i := long stage-middle-none             jump draw-middle-stage
-    i := long stage-middle-short-thin-1     jump draw-middle-stage
-    i := long stage-middle-tall-thin-1      jump draw-middle-stage
-    i := long stage-middle-short-fat-1      jump draw-middle-stage
-    i := long stage-middle-tall-fat-1       jump draw-middle-stage
-
-: stage-top-jump
-    i := long stage-top-none             jump draw-top-stage
-    i := long stage-top-short-thin-1     jump draw-top-stage
-    i := long stage-top-tall-thin-1      jump draw-top-stage
-    i := long stage-top-short-fat-1      jump draw-top-stage
-    i := long stage-top-tall-fat-1       jump draw-top-stage
 
 : stage-bottom-short-thin-1   0x00 0x00 0x00 0x00 0x7F 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x7F 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
 : stage-bottom-tall-thin-1    0x00 0x00 0x00 0x00 0x7F 0xFF 0x80 0x01 0xFF 0xFF 0x80 0x01 0x7F 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
