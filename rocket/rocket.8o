@@ -262,14 +262,19 @@
 :alias altitude-step    vd
 :alias altitude         ve
 
-:const ROCKET_X 38
-:const ROCKET_Y 30
-:const SMOKE_LEFT 16
-:const SMOKE_RIGHT 32
-:const LAUNCH_STEP_COUNT 19
-:const LAUNCH_STEP_LAUNCH 2
-:const MIN_DRIFT 15
-:const MAX_DRIFT 49
+:const ROCKET_X             38
+:const ROCKET_Y             30
+:const SMOKE_LEFT           16
+:const SMOKE_RIGHT          32
+:const LAUNCH_STEP_COUNT    19
+:const LAUNCH_STEP_LAUNCH   2
+:const MIN_DRIFT            15
+:const MAX_DRIFT            49
+
+:const ALTITUDE_TARGET_0 64
+:const ALTITUDE_TARGET_1 128
+:const ALTITUDE_TARGET_2 192
+:const ALTITUDE_TARGET_3 245
 
 :macro get-stage-data-offset in out temp {
     temp := 0b00111111
@@ -409,7 +414,7 @@
         if x != 38 then
     again
 
-    ## Fly ####################################
+###### Fly ##################################################################
     calculate-total-altitude
 
     # pre-set
@@ -458,7 +463,20 @@
         wait-for-frame
 
         altitude += 1
-        if altitude != 255 then
+        if altitude != ALTITUDE_TARGET_0 then
+    again
+
+###### Orbit ##################################################################
+    loop
+        x := ROCKET_X
+        y := ROCKET_Y
+
+        draw-rocket
+        scroll-left
+        draw-rocket
+
+        fill-next-slice
+        wait-for-frame
     again
 ;
 
@@ -650,6 +668,10 @@
     load v0
     jump0 select-sky-jump
 ; 
+
+: fill-orbit-slice
+
+;
  
 : draw-sky-slice
     v3 := 124
@@ -816,14 +838,14 @@
 
 # jump index to which sky to use for each altitude value
 : next-slice-index-table
-    0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  
-    2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  
-    4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  
-    6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  
-    8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  
-    10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 
-    12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 
-    14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14
+    0  0  0  0  0  0  0  0  #0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  
+    2  2  2  2  2  2  2  2  #2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  
+    4  4  4  4  4  4  4  4  #4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  
+    6  6  6  6  6  6  6  6  #6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  
+    8  8  8  8  8  8  8  8  #8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  
+    10 10 10 10 10 10 10 10 #10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 
+    12 12 12 12 12 12 12 12 #12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 
+    14 14 14 14 14 14 14 14 14 #14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14
 
 : sky-full 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
 : sky-1 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0
@@ -831,6 +853,10 @@
 : sky-3 0x70 0xD0 0x70 0xD0 0xB0 0xE0 0xB0 0xE0 0xD0 0x70 0xD0 0x70 0xE0 0xB0 0xE0
 : sky-4 0x10 0x20 0x10 0x20 0x10 0x80 0x10 0x80 0x40 0x80 0x40 0x80 0x40 0x20 0x40
 : sky-5 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: next-orbit-slice-index-table
+    0 0 0 0 0 0 0 0 2 4 6 8 10 12 14
+;
 
 : cloud-1 0x80 0xC0 0xA0 0x90 0x88 0x88 0x88 0x90 0x98 0xA4 0xC2 0x82 0x84 0x98 0xE0
 

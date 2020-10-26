@@ -58,10 +58,13 @@
         }
 
         function printOutput(stage1, stage2, stage3, altitudes) {
+            const targets = getAltitudeValues().map((a, i) => `:const ALTITUDE_TARGET_${i} ${a}`);
             const rocketAltitudes = 
                 "# " + stage1.value + "\n" +
                 "# " + stage2.value + "\n" +
                 "# " + stage3.value + "\n" +
+                "# " + getAltitudeValues().join('|') + "\n" +
+                targets.join("\n") + "\n" +
                 ": rocket-altitudes\n" +
                 altitudes.join(' ');
 
@@ -125,13 +128,24 @@
         }
 
         function getAltitudeHeight(altitude) {
-            if (altitude < 64)   return 'altitude-0';
-            if (altitude < 128)  return 'altitude-1';
-            if (altitude < 192)  return 'altitude-2';
-            if (altitude < 250)  return 'altitude-3';
+            const [altitude0, altitude1, altitude2, altitude3] = getAltitudeValues();
+
+            if (altitude < altitude0)  return 'altitude-0';
+            if (altitude < altitude1)  return 'altitude-1';
+            if (altitude < altitude2)  return 'altitude-2';
+            if (altitude < altitude3)  return 'altitude-3';
             
             return 'altitude-4';
         }
+
+        function getAltitudeValues() {
+            return [
+                +document.getElementById('altitude0').value,
+                +document.getElementById('altitude1').value,
+                +document.getElementById('altitude2').value,
+                +document.getElementById('altitude3').value
+            ]
+        }  
     </script>
 
     <style>
@@ -223,6 +237,17 @@
                     <span>
                         <label for='stage3'>Stage 3 Parts</label>
                         <input id="stage3"></input>
+                    </span>
+                </p>
+                <p>
+                    <label>Altitudes</label>
+                </p>
+                <p>
+                    <span>
+                        <input id="altitude0" placeholder="orbit" />
+                        <input id="altitude1" placeholder="moon" />
+                        <input id="altitude2" placeholder="3" />
+                        <input id="altitude3" placeholder="4" />
                     </span>
                 </p>
                 <p><hr/</p>
