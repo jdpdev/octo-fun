@@ -1,0 +1,136 @@
+<html>
+    <script>
+        function stageMapper(stages) {
+            return stages.split('|')
+                    .map(p => p.trim().split(/\s/))
+                    .map(p => ({gain: +p[0], loss: +p[1]}))
+        }
+
+        function calculatePartsTable() {
+            const stage1 = document.getElementById('stage1')
+            const stage2 = document.getElementById('stage2')
+            const stage3 = document.getElementById('stage3')
+            const output = document.getElementById('output')
+            const scaleTo = +(document.getElementById('scale-to').value)
+
+            const stage1Pieces = stageMapper(stage1.value)
+            const stage2Pieces = stageMapper(stage2.value)
+            const stage3Pieces = stageMapper(stage3.value)
+
+            stage2Pieces.unshift({gain: 0, loss: 0})
+            stage3Pieces.unshift({gain: 0, loss: 0})
+
+            const stageCombinations = [];
+
+            for (let x = 0; x < stage1Pieces.length; x++) {
+                const s1 = stage1Pieces[x];
+                for (let y = 0; y < stage2Pieces.length; y++) {
+                    const s2 = stage2Pieces[y];
+                    for (let z = 0; z < stage3Pieces.length; z++) {
+                        const s3 = stage3Pieces[z];
+                        stageCombinations.push((s1.gain - s1.loss) + (s2.gain - s2.loss) + (s3.gain - s3.loss));
+                    }
+                }
+            }
+
+            const maxAltitude = Math.max(...stageCombinations);
+            const scaleFactor = scaleTo > 0 ? scaleTo / maxAltitude : 0;
+
+            const scaledStages = stageCombinations.map(s => scaleFactor > 0 ? Math.floor(s * scaleFactor) : s)
+
+            const lineBreaks = +(document.getElementById('line-breaks').value);
+            const padTo = +(document.getElementById('pad-to').value);
+
+            const outstring = scaledStages.map((s, i) => {
+                s = s.toString().padEnd(padTo, ' ');
+                
+                if (i > 0 && i % lineBreaks === 0) {
+                    return "\n" + s;
+                } else {
+                    return s;
+                }
+            })
+            output.value = outstring.join(' ');
+        }
+    </script>
+
+    <style>
+        body {
+            display: flex;
+        }
+
+        div {
+            flex: 0 1 50%;
+        }
+
+        span {
+            display: flex;
+        }
+
+        span label {
+            flex: 0 0 auto;
+        }
+
+        span input {
+            flex: 1 1 auto;
+        }
+    </style>
+
+    <body>
+        <div>
+            <p>
+                <h4>Stage Part Format</h4>
+                <code>
+                    altitude-gain altitude-loss | altitude-gain altitude-loss | ... 
+                </code>
+    
+                <p>
+                    <b><code>altitude-gain</code></b> is altitude given by the part
+                    <br/>
+                    <b><code>altitude-gain</code></b> is altitude penalty by adding this part as a stage
+                </p>
+            </p>
+            <p>
+                <span>
+                    <label for='stage1'>Stage 1 Parts</label>
+                    <input id="stage1"></input>
+                </span>
+            </p>
+            <p>
+                <span>
+                    <label for='stage2'>Stage 2 Parts</label>
+                    <input id="stage2"></input>
+                </span>
+            </p>
+            <p>
+                <span>
+                    <label for='stage3'>Stage 3 Parts</label>
+                    <input id="stage3"></input>
+                </span>
+            </p>
+            <p><hr/</p>
+            <p>
+                <label for='scale-to'>Scale To</label>
+                <input id="scale-to" value="255"></input>
+            </p>
+            <p>
+                <label for='line-breaks'>Line Break X</label>
+                <input id="line-breaks" value="4"></input>
+            </p>
+            <p>
+                <label for='pad-to'>Pad To</label>
+                <input id="pad-to" value="3"></input>
+            </p>
+            <p><hr/</p>
+            <p>
+                <button type='submit' onclick="calculatePartsTable()">Generate</button>
+            </p>
+        </div>
+        <div>
+            <p>
+                <label for="output">Output</label><br/>
+                <textarea id="output" cols="80" rows="40"></textarea>
+            </p>
+        </div>
+    </body>
+</html>

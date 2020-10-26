@@ -237,20 +237,28 @@
 # Game
 ############################################################
 ### temps
+
+# pre-launch
 :alias launch-step v7
 
+# flying mode
+#:alias steering-counter v5
+#:alias drift-offset     v6
+#:alias drift-direction  v7
+#:alias drift-counter    v8
+#:alias drift-step       v9
+
 ### permanent
-:alias fuel-amount      v8
-:alias fuel-step        v9
 
 # cache rocket sprite offsets
 # only allows 10 stages when offset is saved as offset
 # TODO 1: save offset as index and expand
 # TODO 2: load offset as needed
-:alias game-bottom-stage-data-offset   va
-:alias game-middle-stage-data-offset   vb
-:alias game-top-stage-data-offset      vc
+:alias game-bottom-stage-data-offset   v9
+:alias game-middle-stage-data-offset   va
+:alias game-top-stage-data-offset      vb
 
+:alias total-altitude   vc
 :alias altitude-step    vd
 :alias altitude         ve
 
@@ -260,6 +268,8 @@
 :const SMOKE_RIGHT 32
 :const LAUNCH_STEP_COUNT 19
 :const LAUNCH_STEP_LAUNCH 2
+:const MIN_DRIFT 15
+:const MAX_DRIFT 49
 
 :macro get-stage-data-offset in out temp {
     temp := 0b00111111
@@ -294,6 +304,18 @@
     temp := 0b00111111
     to &= temp
     to += value
+}
+
+:macro draw-exhaust x y temp {
+    temp := random 0b11
+
+    plane 2
+    if temp == 0 then i := long exhaust-plume-1
+    if temp == 1 then i := long exhaust-plume-2
+    if temp == 2 then i := long exhaust-plume-3
+    if temp == 3 then i := long exhaust-plume-4
+
+    sprite x y 5
 }
 
 : game-loop
@@ -388,11 +410,20 @@
     again
 
     ## Fly ####################################
+    calculate-total-altitude
+
+    # pre-set
     altitude := 0
+    #drift-offset := 0
+    #drift-direction := 1
+    #drift-counter := 0
+    #drift-step := 75
+    #steering-counter := 100
 
     loop
         x := ROCKET_X
         y := ROCKET_Y
+        #y += drift-offset
         v0 := 0b1
         v0 &= altitude
 
@@ -403,11 +434,18 @@
         if v0 == 1 then i := long blast-tail-2
         sprite x y 15
 
-        x += 3
+        x += -3
+        draw-exhaust x y v3
+
+        x += 6
         y += 1
         draw-rocket
-
         scroll-left
+
+        #accumulate-drift
+        y := ROCKET_Y
+        #y += drift-offset
+
         draw-rocket
 
         x += -3
@@ -424,19 +462,81 @@
     again
 ;
 
+:macro loop-calculate-total-altitude counter delta {
+    loop
+        i += delta
+        counter += -1
+        if counter != 0 then
+    again
+}
+
+: calculate-total-altitude
+    # total altitude
+    i := rocket-data
+    load v2
+    
+    i := bottom-stage-data
+    stage-data-index-shift v0
+    i += v0
+    v0 := 3
+    i += v0
+    load v3 - v3
+
+    i := middle-stage-data
+    stage-data-index-shift v1
+    i += v0
+    load v4 - v4
+    
+    i := top-stage-data
+    stage-data-index-shift v2
+    i += v0
+    load v5 - v5
+
+    i := rocket-altitudes
+
+    # first stage
+    v0 := 25
+    loop-calculate-total-altitude v3 v0
+    v0 := 5
+    loop-calculate-total-altitude v4 v0
+    v0 := 1
+    loop-calculate-total-altitude v5 v0
+    load total-altitude
+    :breakpoint total-altitude
+;
+
+#: accumulate-drift
+#    v3 := OCTO_KEY_A
+#    if v3 key then jump oppose-drift
+#
+#    v3 := OCTO_KEY_D
+#    if v3 key then jump oppose-drift
+#
+#    full-drift
+#;
+#
+#: oppose-drift
+#    v4 := steering-counter
+#    v4 -= drift-step
+#    drift-counter += v4
+#    if vf == 1 begin 
+#        drift-offset -= drift-direction
+#        if vf == 0 begin
+#
+#        end
+#    end
+#;
+#
+#: full-drift
+#    drift-counter += drift-step
+#    if vf == 1 then drift-offset += drift-direction
+#;
+
 : lift-off-draw-rocket
 # plume
-    v5 := random 0b11
-    y += -1
-
-    plane 2
-    if v5 == 0 then i := long exhaust-plume-1
-    if v5 == 1 then i := long exhaust-plume-2
-    if v5 == 2 then i := long exhaust-plume-3
-    if v5 == 3 then i := long exhaust-plume-4
-
     x += -4
-    sprite x y 5
+    y += -1
+    draw-exhaust x y v5
     x += 4
 
 # rocket
@@ -770,24 +870,56 @@
 # bottom stage | middle stage | top stage
 : rocket-data 0 0 0
 
-# jump offset | world x offset | fuel amount | ???
+# jump offset | world x offset | altitudes x/y/z
 : bottom-stage-data
     0  4 10 0 0 0 0 0 
-    6  8 20 0 0 0 0 0 
-    12 4 30 0 0 0 0 0 
-    18 8 40 0 0 0 0 0 
+    6  8 20 1 0 0 0 0 
+    12 4 30 2 0 0 0 0 
+    18 8 40 3 0 0 0 0 
 : middle-stage-data
     0  0 0  0 0 0 0 0 # no stage
-    6  4 10 0 0 0 0 0
-    12 8 20 0 0 0 0 0
-    18 4 30 0 0 0 0 0
-    24 8 40 0 0 0 0 0
+    6  4 10 1 0 0 0 0
+    12 8 20 2 0 0 0 0
+    18 4 30 3 0 0 0 0
+    24 8 40 4 0 0 0 0
 : top-stage-data
     0  0 0  0 0 0 0 0 # no stage
-    6  4 10 0 0 0 0 0
-    12 8 20 0 0 0 0 0
-    18 4 30 0 0 0 0 0
-    24 8 40 0 0 0 0 0
+    6  4 10 1 0 0 0 0
+    12 8 20 2 0 0 0 0
+    18 4 30 3 0 0 0 0
+    24 8 40 4 0 0 0 0
+
+# stages = XYZ
+# X: X * 25 
+# Y: X + Y * 5
+# Z: X + Y + Z 
+#   100 101 102 103 104
+#   110 111 112 113 114
+#   120 121 122 123 124
+#   130 131 132 133 134
+#   140 141 142 143 144
+# etc
+: rocket-altitudes
+    20  70  130 95  160 
+    50  100 160 125 190 
+    60  110 170 135 200 
+    55  105 165 130 195 
+    75  125 185 150 215 
+    45  95  155 120 185 
+    75  125 185 150 215 
+    85  135 195 160 225 
+    80  130 190 155 220 
+    100 150 210 175 240 
+    30  80  140 105 170 
+    60  110 170 135 200 
+    70  120 180 145 210 
+    65  115 175 140 205 
+    85  135 195 160 225 
+    60  110 170 135 200 
+    90  140 200 165 230 
+    100 150 210 175 240 
+    95  145 205 170 235 
+    115 165 225 190 255
 
 : builder-ui-dot 0x80
 : builder-ui-arrow 0x18 0x18 0x99 0xDB 0x7E 0x3C 0x18
