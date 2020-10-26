@@ -462,11 +462,12 @@
     again
 ;
 
-:macro loop-calculate-total-altitude counter delta {
+:macro loop-calculate-total-altitude start delta temp {
+    temp := start
     loop
+        while temp != 0
         i += delta
-        counter += -1
-        if counter != 0 then
+        temp += -1
     again
 }
 
@@ -496,13 +497,12 @@
 
     # first stage
     v0 := 25
-    loop-calculate-total-altitude v3 v0
+    loop-calculate-total-altitude v3 v0 v1
     v0 := 5
-    loop-calculate-total-altitude v4 v0
+    loop-calculate-total-altitude v4 v0 v1
     v0 := 1
-    loop-calculate-total-altitude v5 v0
-    load total-altitude
-    :breakpoint total-altitude
+    loop-calculate-total-altitude v5 v0 v1
+    load total-altitude - total-altitude
 ;
 
 #: accumulate-drift
