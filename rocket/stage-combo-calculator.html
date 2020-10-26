@@ -50,14 +50,22 @@
                     return s;
                 }
             })
-            output.value = 
+            
+            const print = printOutput(stage1, stage2, stage3, outstring);
+            output.value = print;
+
+            populateAltitudes(scaledStages, stage1Pieces.length, stage2Pieces.length, stage3Pieces.length);
+        }
+
+        function printOutput(stage1, stage2, stage3, altitudes) {
+            const rocketAltitudes = 
                 "# " + stage1.value + "\n" +
                 "# " + stage2.value + "\n" +
                 "# " + stage3.value + "\n" +
-                outstring.join(' ')
-            ;
+                ": rocket-altitudes\n" +
+                altitudes.join(' ');
 
-            populateAltitudes(scaledStages, stage1Pieces.length, stage2Pieces.length, stage3Pieces.length);
+            return rocketAltitudes;
         }
 
         function populateAltitudes(altitudes, stage1Count, stage2Count, stage3Count) {
