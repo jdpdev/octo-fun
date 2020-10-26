@@ -50,81 +50,194 @@
                     return s;
                 }
             })
-            output.value = outstring.join(' ');
+            output.value = 
+                "# " + stage1.value + "\n" +
+                "# " + stage2.value + "\n" +
+                "# " + stage3.value + "\n" +
+                outstring.join(' ')
+            ;
+
+            populateAltitudes(scaledStages, stage1Pieces.length, stage2Pieces.length, stage3Pieces.length);
+        }
+
+        function populateAltitudes(altitudes, stage1Count, stage2Count, stage3Count) {
+            const container = document.getElementById('altitude-grid');
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+
+            const altitudeList = [...altitudes];
+            const step = stage2Count * stage3Count;
+
+            while (altitudeList.length > 0) {
+                const slice = altitudeList.splice(0, step);
+                const row = buildStage(slice, stage3Count);
+                container.appendChild(row);
+            }
+        }
+
+        function buildStage(altitudes, stage3Count) {
+            const container = document.createElement('div');
+            container.classList.add('stage-1-wrap');
+
+            const step = stage3Count;
+            let counter = 0;
+
+            while (altitudes.length > 0) {
+                const slice = altitudes.splice(0, step);
+                const row = buildAltitudeRow(slice, counter);
+                container.appendChild(row);
+                counter++;
+            }
+
+            return container;
+        }
+
+        function buildAltitudeRow(altitudes, index) {
+            const row = document.createElement('div');
+            row.classList.add('altitude-row');
+
+            altitudes.forEach((a, i) => row.appendChild(buildAltitudeItem(a, index !== 0 || i === 0)));
+            
+            return row;
+        }
+
+        function buildAltitudeItem(altitude, show) {
+            const element = document.createElement('div');
+            element.classList.add('altitude-item');
+
+            if (!show) {
+                return element;
+            }
+
+            element.classList.add(getAltitudeHeight(altitude));
+            element.textContent = altitude;
+
+            return element;
+        }
+
+        function getAltitudeHeight(altitude) {
+            if (altitude < 64)   return 'altitude-0';
+            if (altitude < 128)  return 'altitude-1';
+            if (altitude < 192)  return 'altitude-2';
+            if (altitude < 250)  return 'altitude-3';
+            
+            return 'altitude-4';
         }
     </script>
 
     <style>
-        body {
+        .flex-container {
             display: flex;
         }
 
-        div {
+        .flex-container div {
             flex: 0 1 50%;
         }
 
-        span {
+        .flex-container span {
             display: flex;
         }
 
-        span label {
+        .flex-container span label {
             flex: 0 0 auto;
         }
 
-        span input {
+        .flex-container span input {
             flex: 1 1 auto;
+        }
+
+        .altitude-row {
+            display: flex;
+        }
+
+        .altitude-item {
+            flex: 0 1 auto;
+            padding: 4px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .altitude-0 {
+            background-color: #fff;
+        }
+
+        .altitude-1 {
+            background-color: #ddf;
+        }
+
+        .altitude-2 {
+            background-color: #bbf;
+        }
+
+        .altitude-3 {
+            background-color: #99f;
+        }
+
+        .altitude-4 {
+            background-color: #77f;
+        }
+
+        .stage-1-wrap {
+            border: 2px solid #000;
+            margin-bottom: 4px;
         }
     </style>
 
     <body>
-        <div>
-            <p>
-                <h4>Stage Part Format</h4>
-                <code>
-                    altitude-gain altitude-loss | altitude-gain altitude-loss | ... 
-                </code>
-    
+        <div class='flex-container'>
+            <div>
                 <p>
-                    <b><code>altitude-gain</code></b> is altitude given by the part
-                    <br/>
-                    <b><code>altitude-gain</code></b> is altitude penalty by adding this part as a stage
+                    <h4>Stage Part Format</h4>
+                    <code>
+                        altitude-gain altitude-loss | altitude-gain altitude-loss | ... 
+                    </code>
+        
+                    <p>
+                        <b><code>altitude-gain</code></b> is altitude given by the part
+                        <br/>
+                        <b><code>altitude-gain</code></b> is altitude penalty by adding this part as a stage
+                    </p>
                 </p>
-            </p>
-            <p>
-                <span>
-                    <label for='stage1'>Stage 1 Parts</label>
-                    <input id="stage1"></input>
-                </span>
-            </p>
-            <p>
-                <span>
-                    <label for='stage2'>Stage 2 Parts</label>
-                    <input id="stage2"></input>
-                </span>
-            </p>
-            <p>
-                <span>
-                    <label for='stage3'>Stage 3 Parts</label>
-                    <input id="stage3"></input>
-                </span>
-            </p>
-            <p><hr/</p>
-            <p>
-                <label for='scale-to'>Scale To</label>
-                <input id="scale-to" value="255"></input>
-            </p>
-            <p>
-                <label for='line-breaks'>Line Break X</label>
-                <input id="line-breaks" value="4"></input>
-            </p>
-            <p>
-                <label for='pad-to'>Pad To</label>
-                <input id="pad-to" value="3"></input>
-            </p>
-            <p><hr/</p>
-            <p>
-                <button type='submit' onclick="calculatePartsTable()">Generate</button>
-            </p>
+                <p>
+                    <span>
+                        <label for='stage1'>Stage 1 Parts</label>
+                        <input id="stage1"></input>
+                    </span>
+                </p>
+                <p>
+                    <span>
+                        <label for='stage2'>Stage 2 Parts</label>
+                        <input id="stage2"></input>
+                    </span>
+                </p>
+                <p>
+                    <span>
+                        <label for='stage3'>Stage 3 Parts</label>
+                        <input id="stage3"></input>
+                    </span>
+                </p>
+                <p><hr/</p>
+                <p>
+                    <label for='scale-to'>Scale To</label>
+                    <input id="scale-to" value="255"></input>
+                </p>
+                <p>
+                    <label for='line-breaks'>Line Break X</label>
+                    <input id="line-breaks" value="5"></input>
+                </p>
+                <p>
+                    <label for='pad-to'>Pad To</label>
+                    <input id="pad-to" value="3"></input>
+                </p>
+                <p><hr/</p>
+                <p>
+                    <button type='submit' onclick="calculatePartsTable()">Generate</button>
+                </p>
+            </div>
+            <div id='altitude-grid' class='altitude-grid'>
+                
+            </div>
         </div>
         <div>
             <p>
