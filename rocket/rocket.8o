@@ -885,16 +885,16 @@
 ;
  
 : draw-sky-slice
-    if scroll-direction != 123 then v3 := 124
-    if scroll-direction == 123 then v3 := 0
-    v4 := 0
+    if scroll-direction != 123 then x := 124
+    if scroll-direction == 123 then x := 0
+    y := 0
     plane 1
 
     loop
-        sprite v3 v4 15
+        sprite x y 15
 
-        v4 += 15
-        if v4 != 75 then
+        y += 15
+        if y != 75 then
     again
 ;
 
