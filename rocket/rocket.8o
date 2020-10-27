@@ -124,6 +124,8 @@
 }
 
 :macro select-next-item draw selected-item min max {
+    if max == 0 then return
+
     draw
 
     selected-item += 1
@@ -206,6 +208,8 @@
     Y := UI_Y
     v0 := 0
     loop
+        while v0 != max
+
         i := long builder-ui-dot
         sprite X Y 1
         
@@ -217,7 +221,6 @@
 
         Y += 2
         v0 += 1
-        if v0 != max then
     again
 }
 
@@ -248,6 +251,8 @@
 #:alias drift-counter    v8
 #:alias drift-step       v9
 
+:alias scroll-direction    v7
+
 ### permanent
 
 # cache rocket sprite offsets
@@ -270,6 +275,8 @@
 :const LAUNCH_STEP_LAUNCH   2
 :const MIN_DRIFT            15
 :const MAX_DRIFT            49
+
+:const LAUNCH_FAILED    2
 
 :const ALTITUDE_TARGET_0 64
 :const ALTITUDE_TARGET_1 128
@@ -415,6 +422,20 @@
     again
 
 ###### Fly ##################################################################
+    loop-fly
+
+###### Fall ##################################################################
+    if vf == LAUNCH_FAILED then loop-launch-failed
+
+###### Orbit ##################################################################
+    if vf != LAUNCH_FAILED then loop-in-orbit
+
+    v0 := key
+    jump builder-loop
+;
+
+###### Fly ##################################################################
+: loop-fly
     calculate-total-altitude
 
     # pre-set
@@ -459,14 +480,81 @@
         if v0 == 1 then i := long blast-tail-1
         sprite x y 15
 
+        scroll-direction := 0
         fill-next-slice
         wait-for-frame
 
         altitude += 1
+        vf := LAUNCH_FAILED
+        if altitude == total-altitude then return
         if altitude != ALTITUDE_TARGET_0 then
     again
 
+    vf := LAUNCH_FAILED
+;
+
+###### Fall ##################################################################
+: loop-launch-failed
+    # momentum
+
+    altitude-step := 10
+    loop
+        x := ROCKET_X
+        y := ROCKET_Y
+
+        draw-rocket
+        scroll-left
+        draw-rocket
+
+        scroll-direction := 0
+        fill-next-slice
+
+        vf := altitude-step
+        delay := vf
+        
+        loop
+            vf := delay
+            if vf != 0 then
+        again
+
+        altitude-step += 2
+        altitude += 1
+        if altitude-step != 40 then
+    again
+
+    #altitude += 20
+
+    # fall
+    loop
+        x := ROCKET_X
+        y := ROCKET_Y
+
+        draw-rocket
+        scroll-right
+        draw-rocket
+
+        scroll-direction := 123
+        fill-next-slice
+
+        vf := altitude-step
+        delay := vf
+        
+        loop
+            vf := delay
+            if vf != 0 then
+        again
+
+        if altitude-step != 10 then altitude-step += -3
+        #:breakpoint altitude
+        altitude += -1
+        if altitude != 0 then
+    again
+
+    vf := LAUNCH_FAILED
+;
+
 ###### Orbit ##################################################################
+: loop-in-orbit
     loop
         x := ROCKET_X
         y := ROCKET_Y
@@ -662,7 +750,8 @@
 ;
 
 : fill-next-slice
-    i := long next-slice-index-table
+    if scroll-direction != 123 then i := long next-slice-index-table
+    if scroll-direction == 123 then i := long previous-slice-index-table
     i += altitude
 
     load v0
@@ -674,7 +763,8 @@
 ;
  
 : draw-sky-slice
-    v3 := 124
+    if scroll-direction != 123 then v3 := 124
+    if scroll-direction == 123 then v3 := 0
     v4 := 0
     plane 1
 
@@ -847,6 +937,20 @@
     12 12 12 12 12 12 12 12 #12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 
     14 14 14 14 14 14 14 14 14 #14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14
 
+: previous-slice-index-table
+    14 14 14 14 14 14 14 14
+    14 14 14 0  0  0  0  0
+    0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0  
+    2  2  2  2  2  2  2  2  
+    4  4  4  4  4  4  4  4  
+    6  6  6  6  6  6  6  6  
+    8  8  8  8  8  8  8  8
+
 : sky-full 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
 : sky-1 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0
 : sky-2 0x70 0xF0 0x70 0xF0 0xB0 0xF0 0xB0 0xF0 0xD0 0xF0 0xD0 0xF0 0xF0 0xE0 0xF0
@@ -891,7 +995,7 @@
 : exhaust-plume-4 0x20 0x30 0x80 0x30 0xA0
 
 # num bottom stages | unlocked bottom | num middle stages | unlocked middle | num top stages | unlocked top
-: builder-data 4 4 5 5 5 5
+: builder-data 4 1 5 0 5 0
 
 # bottom stage | middle stage | top stage
 : rocket-data 0 0 0
