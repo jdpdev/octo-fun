@@ -255,6 +255,7 @@
 :alias scroll-direction    v7
 
 ### permanent
+:alias draw-rocket-temp   v3
 
 # cache rocket sprite offsets
 # only allows 10 stages when offset is saved as offset
@@ -773,29 +774,34 @@
 # set x and y aliases to position
 : draw-rocket
     plane 3
-    v5 := x
+    #v5 := x
 
     # bottom
-    get-stage-data-offset   game-bottom-stage-data-offset v3 vf
+    get-stage-data-offset   game-bottom-stage-data-offset draw-rocket-temp vf
     i := long rocket-stage
-    i += v3
-    sprite v5 y 3
+    i += draw-rocket-temp
+    sprite x y 3
 
     # mid
-    get-stage-x-offset      game-bottom-stage-data-offset v3
-    v5 += v3
-    get-stage-data-offset   game-middle-stage-data-offset v3 vf
+    get-stage-x-offset      game-bottom-stage-data-offset draw-rocket-temp
+    x += draw-rocket-temp
+    get-stage-data-offset   game-middle-stage-data-offset draw-rocket-temp vf
     i := long rocket-stage
-    i += v3
-    sprite v5 y 3
+    i += draw-rocket-temp
+    sprite x y 3
 
     # top
-    get-stage-x-offset      game-middle-stage-data-offset v3
-    v5 += v3
-    get-stage-data-offset   game-top-stage-data-offset v3 vf
+    get-stage-x-offset      game-middle-stage-data-offset draw-rocket-temp
+    x += draw-rocket-temp
+    get-stage-data-offset   game-top-stage-data-offset draw-rocket-temp vf
     i := long rocket-stage
-    i += v3
-    sprite v5 y 3
+    i += draw-rocket-temp
+    sprite x y 3
+
+    get-stage-x-offset      game-middle-stage-data-offset draw-rocket-temp
+    x -= draw-rocket-temp
+    get-stage-x-offset      game-bottom-stage-data-offset draw-rocket-temp
+    x -= draw-rocket-temp
 ;
 
 : wait-for-frame
