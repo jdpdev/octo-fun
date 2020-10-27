@@ -241,6 +241,7 @@
 # Game
 ############################################################
 ### temps
+# v3, v4, v5 used at start of some steps to cache calculations
 
 # pre-launch
 :alias launch-step v7
@@ -252,11 +253,11 @@
 #:alias drift-counter    v8
 #:alias drift-step       v9
 
+:alias draw-rocket-temp     v3 # protected in loops using draw-rocket
 :alias scroll-direction     v9 # used within scrolling loops
 :alias altitude-step        v5 # safe in play loop
 
 ### permanent
-:alias draw-rocket-temp   v3
 
 # cache rocket sprite offsets
 # only allows 10 stages when offset is saved as offset
@@ -417,13 +418,13 @@
     y := ROCKET_Y
 
     loop
-        v4 := v0
+        v3 := v0
         step-launch-smoke
 
         x := altitude
         y := ROCKET_Y
 
-        v0 := v4
+        v0 := v3
         altitude-step += v0
         if v0 != 255 then v0 += 5
         if vf == 1 then lift-off-draw-rocket
@@ -696,29 +697,10 @@
     # total altitude
     i := rocket-data
     load v3 - v5
-    #:breakpoint rocket-data
-    #
-    #i := bottom-stage-data
-    #stage-data-index-shift v0
-    #i += v0
-    #v0 := 3
-    #i += v0
-    #load v3 - v3
-#
-    #i := middle-stage-data
-    #stage-data-index-shift v1
-    #i += v0
-    #load v4 - v4
-    #
-    #i := top-stage-data
-    #stage-data-index-shift v2
-    #i += v0
-    #load v5 - v5
 
     i := rocket-altitudes
 
     # first stage
-    #:breakpoint total-altitude
     v0 := 25
     loop-calculate-total-altitude v3 v0 v1
     v0 := 5
@@ -759,7 +741,7 @@
 # plume
     x += -4
     y += -1
-    draw-exhaust x y v5
+    draw-exhaust x y v3
     x += 4
 
 # rocket
@@ -774,7 +756,6 @@
 # set x and y aliases to position
 : draw-rocket
     plane 3
-    #v5 := x
 
     # bottom
     get-stage-data-offset   game-bottom-stage-data-offset draw-rocket-temp vf
