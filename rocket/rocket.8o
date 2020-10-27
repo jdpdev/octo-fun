@@ -287,13 +287,13 @@
 :const PROGRESSION_2    12
 
 :macro get-stage-data-offset in out temp {
-    temp := 0b00111111
+    temp := 0b00011111
     out := in
     out &= temp
 }
 
 :macro set-stage-data-offset value to temp {
-    temp := 0b11000000
+    temp := 0b11100000
     to &= temp
     to += value
 }
@@ -305,7 +305,8 @@
     out >>= out
     out >>= out
     out >>= out
-    out >>= out
+    out += 1
+    #out >>= out
 }
 
 :macro set-stage-x-offset value to temp {
@@ -314,7 +315,7 @@
     value <<= value
     value <<= value
     value <<= value
-    value <<= value
+    #value <<= value
 
     temp := 0b00111111
     to &= temp
@@ -337,6 +338,10 @@
     clear
     hires
 
+    game-bottom-stage-data-offset := 0
+    game-middle-stage-data-offset := 0
+    game-top-stage-data-offset := 0
+
     ## cache rocket information
     i := rocket-data
     load v2
@@ -347,6 +352,7 @@
 
     load v4 - v5
     v4 += 6         # there is no empty bottom stage
+    #:breakpoint game-loop
     set-stage-data-offset   v4 game-bottom-stage-data-offset ve
     set-stage-x-offset      v5 game-bottom-stage-data-offset ve
 
@@ -489,11 +495,12 @@
 
         altitude += 1
         vf := LAUNCH_FAILED
+
         if altitude == total-altitude then return
         if altitude != ALTITUDE_TARGET_0 then
     again
 
-    vf := LAUNCH_FAILED
+    vf := 0
 ;
 
 ###### Fall ##################################################################
@@ -685,28 +692,30 @@
 : calculate-total-altitude
     # total altitude
     i := rocket-data
-    load v2
-    
-    i := bottom-stage-data
-    stage-data-index-shift v0
-    i += v0
-    v0 := 3
-    i += v0
-    load v3 - v3
-
-    i := middle-stage-data
-    stage-data-index-shift v1
-    i += v0
-    load v4 - v4
-    
-    i := top-stage-data
-    stage-data-index-shift v2
-    i += v0
-    load v5 - v5
+    load v3 - v5
+    #:breakpoint rocket-data
+    #
+    #i := bottom-stage-data
+    #stage-data-index-shift v0
+    #i += v0
+    #v0 := 3
+    #i += v0
+    #load v3 - v3
+#
+    #i := middle-stage-data
+    #stage-data-index-shift v1
+    #i += v0
+    #load v4 - v4
+    #
+    #i := top-stage-data
+    #stage-data-index-shift v2
+    #i += v0
+    #load v5 - v5
 
     i := rocket-altitudes
 
     # first stage
+    #:breakpoint total-altitude
     v0 := 25
     loop-calculate-total-altitude v3 v0 v1
     v0 := 5
@@ -1100,45 +1109,44 @@
 : exhaust-plume-4 0x20 0x30 0x80 0x30 0xA0
 
 # num bottom stages | unlocked bottom | num middle stages | unlocked middle | num top stages | unlocked top
-: builder-data 4 1 5 0 5 0
+#: builder-data 4 1 5 0 5 0
+: builder-data 4 4 5 5 5 5
 
 : total-mission-count       0
 : builder-progression-step  0
 : builder-progression  
     4 2 5 0 5 0 # i + 0
-    4 2 5 1 5 0 # i + 6
-    4 3 5 1 5 0 # i + 12
-    4 3 5 2 5 0 # i + 18
-    4 4 5 2 5 1 # i + 24
-    4 4 5 3 5 1 # i + 30
-    4 4 5 3 5 2 # i + 36
-    4 4 5 4 5 2 # i + 42
-    4 4 5 4 5 3 # i + 48
-    4 4 5 5 5 3 # i + 54
-    4 4 5 5 5 4 # i + 60
-    4 4 5 5 5 5 # i + 66
+    4 2 5 2 5 0 # i + 6
+    4 3 5 2 5 0 # i + 12
+    4 3 5 3 5 0 # i + 18
+    4 4 5 3 5 2 # i + 24
+    4 4 5 4 5 2 # i + 30
+    4 4 5 4 5 3 # i + 36
+    4 4 5 5 5 3 # i + 42
+    4 4 5 5 5 4 # i + 48
+    4 4 5 5 5 5 # i + 54
 
 # bottom stage | middle stage | top stage
 : rocket-data 0 0 0
 
 # jump offset | world x offset | altitudes x/y/z
 : bottom-stage-data
-    0  4 10 0 0 0 0 0 
-    6  8 20 1 0 0 0 0 
-    12 4 30 2 0 0 0 0 
-    18 8 40 3 0 0 0 0 
+    0  3 10 0 0 0 0 0 
+    6  7 20 1 0 0 0 0 
+    12 3 30 2 0 0 0 0 
+    18 7 40 3 0 0 0 0 
 : middle-stage-data
     0  0 0  0 0 0 0 0 # no stage
-    6  4 10 1 0 0 0 0
-    12 8 20 2 0 0 0 0
-    18 4 30 3 0 0 0 0
-    24 8 40 4 0 0 0 0
+    6  3 10 1 0 0 0 0
+    12 7 20 2 0 0 0 0
+    18 3 30 3 0 0 0 0
+    24 7 40 4 0 0 0 0
 : top-stage-data
     0  0 0  0 0 0 0 0 # no stage
-    6  4 10 1 0 0 0 0
-    12 8 20 2 0 0 0 0
-    18 4 30 3 0 0 0 0
-    24 8 40 4 0 0 0 0
+    6  3 10 1 0 0 0 0
+    12 7 20 2 0 0 0 0
+    18 3 30 3 0 0 0 0
+    24 7 40 4 0 0 0 0
 
 # stages = XYZ
 # X: X * 25 
