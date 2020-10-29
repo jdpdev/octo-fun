@@ -370,8 +370,7 @@
     i += v0
 
     load v4 - v5
-    v4 += 6         # there is no empty bottom stage
-    #:breakpoint game-loop
+    v4 += 6         # ther
     set-stage-data-offset   v4 game-bottom-stage-data-offset ve
     set-stage-x-offset      v5 game-bottom-stage-data-offset ve
 
@@ -574,7 +573,6 @@
         again
 
         if altitude-step != 10 then altitude-step += -3
-        #:breakpoint altitude
         altitude += -1
         if altitude != 0 then
     again
@@ -621,10 +619,11 @@
         do-orbit-step
 
         wait-for-frame
-        altitude += 1
 
         v0 := 0x6
         if v0 key then jump start-transfer
+
+        altitude += 1
         if v0 -key then
     again
 ;
@@ -647,6 +646,10 @@
 
 ###### Transfer ##################################################################
 : start-transfer
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+
     i := long transfer-at-altitude
     i += altitude
     load transfer-target - transfer-target
@@ -680,7 +683,6 @@
     jump transfer-loop
 
 : transfer-loop
-    :breakpoint transfer-result
     altitude := 0
 
     x := ROCKET_X
@@ -739,7 +741,6 @@
     x := 124
     y := 24
 
-    #:breakpoint frame-1
     if transfer-target == 1 then i := long moon-far-slice-0
     if transfer-target == 2 then i := long mars-far-slice-0
     if transfer-target == 3 then i := long saturn-far-slice-0
@@ -747,7 +748,6 @@
     sprite x y 0
     wait-for-frame
 
-    #:breakpoint frame-2
     x := ROCKET_X
     y := ROCKET_Y
     draw-rocket
@@ -765,7 +765,6 @@
     draw-rocket
     wait-for-frame
 
-    #:breakpoint frame-3
     x := ROCKET_X
     y := ROCKET_Y
     draw-rocket
@@ -783,7 +782,6 @@
     draw-rocket
     wait-for-frame
 
-    #:breakpoint frame-4
     x := ROCKET_X
     y := ROCKET_Y
     draw-rocket
@@ -860,6 +858,8 @@
     wait-for-frame
 
     loop
+        x := altitude
+
         draw-rocket
         altitude += -4
         x := altitude
@@ -869,7 +869,6 @@
         if altitude != 63 then
     again
 
-    :breakpoint check-landing
     if transfer-result == TRANSFER_GOOD then jump go-touchdown
     if transfer-result != TRANSFER_GOOD then jump go-crash
 
@@ -1044,6 +1043,7 @@
     # mid
     get-stage-x-offset      game-bottom-stage-data-offset draw-rocket-temp
     x += draw-rocket-temp
+    if x > 127 then return
     get-stage-data-offset   game-middle-stage-data-offset draw-rocket-temp vf
     i := long rocket-stage
     i += draw-rocket-temp
@@ -1052,6 +1052,7 @@
     # top
     get-stage-x-offset      game-middle-stage-data-offset draw-rocket-temp
     x += draw-rocket-temp
+    if x > 127 then return
     get-stage-data-offset   game-top-stage-data-offset draw-rocket-temp vf
     i := long rocket-stage
     i += draw-rocket-temp
