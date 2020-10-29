@@ -875,24 +875,35 @@
 
 : go-long
     altitude := 0
-    x := ROCKET_X
-    y := ROCKET_Y
+    #x := ROCKET_X
+    #y := ROCKET_Y
+    #draw-rocket
+
+    x := 48
+    y := 24
 
     loop
-        draw-rocket
-        x += 4
-        draw-rocket
+        if transfer-target == 1 then i := long moon-far-slice-0
+        if transfer-target == 2 then i := long mars-far-slice-0
+        if transfer-target == 3 then i := long saturn-far-slice-0
+        plane 1
+        sprite x y 0
+        plane 3
+        scroll-right
+        plane 1
+        sprite x y 0
 
         wait-for-frame
 
         altitude += 1
-        if altitude != 20 then
+        if altitude != 24 then
     again
+
+    v0 := key
 
     if transfer-target == 1 then v0 := PROGRESSION_4
     if transfer-target == 2 then v0 := PROGRESSION_5
     if transfer-target == 3 then v0 := PROGRESSION_6
-    
     jump end-mission
 
 : go-land
