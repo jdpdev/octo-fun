@@ -586,62 +586,7 @@
 
     x := 40
     y := 24
-    plane 2
-
-    i := long ground-explosion-0
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
-
-    i := long ground-explosion-1
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
-
-    i := long ground-explosion-2
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
-
-    i := long ground-explosion-3
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
-
-    i := long ground-explosion-4
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
-
-    i := long ground-explosion-5
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
-
-    i := long ground-explosion-6
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
-
-    i := long ground-explosion-7
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
-
-    i := long ground-explosion-8
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
-
-    i := long ground-explosion-9
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
-
-    i := long ground-explosion-10
-    sprite x y 0
-    wait-for-frame
-    sprite x y 0
+    draw-explosion
 
     v0 := PROGRESSION_0
     get-stage-data-offset   game-bottom-stage-data-offset v1 vf
@@ -735,7 +680,7 @@
     jump transfer-loop
 
 : transfer-loop
-    #:breakpoint transfer-loop
+    :breakpoint transfer-result
     altitude := 0
 
     x := ROCKET_X
@@ -907,8 +852,96 @@
     jump end-mission
 
 : go-land
+    clear
+    altitude := 127
+    x := altitude
+    y := ROCKET_Y
+    draw-rocket
+    wait-for-frame
+
+    loop
+        draw-rocket
+        altitude += -4
+        x := altitude
+        draw-rocket
+        
+        wait-for-frame
+        if altitude != 63 then
+    again
+
+    :breakpoint check-landing
+    if transfer-result == TRANSFER_GOOD then jump go-touchdown
+    if transfer-result != TRANSFER_GOOD then jump go-crash
+
+: go-crash
+    plane 1
+    draw-ground
+
+    altitude := 63
+    x := altitude
+    y := ROCKET_Y
+
+    loop
+        draw-rocket
+        altitude -= 4
+        x := altitude
+        draw-rocket
+        wait-for-frame
+
+        if altitude != 3 then
+    again
+
+    draw-rocket
+
+    x := 1
+    y := 24
+    draw-explosion
+;
+
+: go-touchdown
+    plane 1
+    draw-ground
+
+    altitude := 63
+    x := altitude
+    y := ROCKET_Y
+
+    loop
+        draw-rocket
+        altitude -= 4
+        x := altitude
+        draw-rocket
+        wait-for-frame
+
+        if altitude != 3 then
+    again
+
+    draw-rocket
+    x := 1
+    draw-rocket
+;
 
 ###### Functions ##################################################################
+
+: draw-ground
+    x := 0
+    y := 0
+    v0 := 0
+
+    loop
+        get-ground-slice
+        v0 += 6
+        y += 8
+        if y != 64 then
+    again
+;
+
+: get-ground-slice
+    jump0 moon-ground-jump
+
+: draw-ground-slice
+    sprite x y 8
+;
 
 : progress-to-v0
     i := builder-progression-step
@@ -1028,6 +1061,65 @@
     x -= draw-rocket-temp
     get-stage-x-offset      game-bottom-stage-data-offset draw-rocket-temp
     x -= draw-rocket-temp
+;
+
+: draw-explosion
+    plane 2
+
+    i := long ground-explosion-0
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-1
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-2
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-3
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-4
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-5
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-6
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-7
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-8
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-9
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-10
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
 ;
 
 : wait-for-frame
@@ -1276,10 +1368,29 @@
     i := long saturn-far-slice-2    jump draw-orbit-slice
     i := long saturn-far-slice-3    jump draw-orbit-slice
 
+: moon-ground-jump
+    i := long ground-moon-1         jump draw-ground-slice
+    i := long ground-moon-2         jump draw-ground-slice
+    i := long ground-moon-3         jump draw-ground-slice
+    i := long ground-moon-4         jump draw-ground-slice
+    i := long ground-moon-5         jump draw-ground-slice
+    i := long ground-moon-6         jump draw-ground-slice
+    i := long ground-moon-7         jump draw-ground-slice
+    i := long ground-moon-8         jump draw-ground-slice
+
 : ground-plane 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F
 : ground-trees 0x7F 0x57 0x0F 0x6F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x4F 0x07 0x4F 0x7F
 : ground-launcher 0x3F 0x3F 0x39 0x01 0x7F 0x3F 0x3F 0x3F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F
 : ground-pad 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x3F 0x3F
+
+: ground-moon-1 0x80 0xE0 0xF0 0xE0 0xC0 0xC0 0x80 0x80
+: ground-moon-2 0x80 0xC0 0xA0 0xA0 0x90 0xD0 0xC8 0x84
+: ground-moon-3 0xFC 0xF8 0xF0 0xE0 0xC0 0xE0 0xE0 0xC0
+: ground-moon-4 0xE0 0xF0 0xE0 0xC0 0x80 0x80 0x80 0x80
+: ground-moon-5 0x80 0x80 0x80 0xC0 0xA0 0xC0 0xA0 0x90
+: ground-moon-6 0x98 0xF8 0xB0 0xA0 0xE0 0xE0 0xC0 0x80
+: ground-moon-7 0xC0 0xE0 0xE0 0xC0 0xE0 0xB0 0x98 0x88
+: ground-moon-8 0xC8 0xF0 0xE0 0xC0 0xE0 0xE0 0xC0 0x80
 
 : rocket-stage
     0x00 0x00 0x00 0x00 0x00 0x00   # none (0)
@@ -1410,22 +1521,22 @@
     # 20 0 | 45 0 | 30 0 | 60 0
     # 40 10 | 60 20 | 50 15 | 80 25
     # 70 20 | 140 30 | 100 25 | 180 40
-    20  70  130 95  160 
+    20  70  130 95  160 # s1
     50  100 160 125 190 
     60  110 170 135 200 
     55  105 165 130 195 
     75  125 185 150 215 
-    45  95  155 120 185 
+    45  95  155 120 185 # s2
     75  125 185 150 215 
     85  135 195 160 225 
     80  130 190 155 220 
     100 150 210 175 240 
-    30  80  140 105 170 
+    30  80  140 105 170 # s3
     60  110 170 135 200 
     70  120 180 145 210 
     65  115 175 140 205 
     85  135 195 160 225 
-    60  110 170 135 200 
+    60  110 170 135 200 # s4
     90  140 200 165 230 
     100 150 210 175 240 
     95  145 205 170 235 
