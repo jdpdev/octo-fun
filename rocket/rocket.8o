@@ -285,8 +285,10 @@
 
 :const LAUNCH_FAILED    2
 
-:const O0 0   # no orbit
-:const O1 1   # orbit
+:const O0 200 # no orbit low
+:const O1 201 # no orbit med
+:const O2 202 # no orbit high
+:const OO 1   # orbit
 :const M0 2   # moon crash
 :const M1 3   # moon land
 :const A0 4   # mars crash
@@ -533,13 +535,27 @@
         wait-for-frame
 
         altitude += 1
-        vf := LAUNCH_FAILED
+        vf := 0
 
-        if altitude == total-altitude then return
+        if altitude == 20 then check-low-failure
+        if altitude == 40 then check-med-failure
+        if altitude == 60 then check-high-failure
+
+        if vf == LAUNCH_FAILED then return
         if altitude != ALTITUDE_TARGET_0 then
     again
+;
 
-    vf := 0
+: check-low-failure
+    if total-altitude == O0 then vf := LAUNCH_FAILED
+;
+
+: check-med-failure
+    if total-altitude == O1 then vf := LAUNCH_FAILED
+;
+
+: check-high-failure
+    if total-altitude == O2 then vf := LAUNCH_FAILED
 ;
 
 ###### Fall ##################################################################
@@ -1028,7 +1044,7 @@
     i := rocket-data
     load v3 - v5
 
-    i := rocket-altitudes
+    i := long rocket-altitudes
 
     # first stage
     v0 := 25
@@ -1591,17 +1607,17 @@
     # 20 0 | 45 0 | 30 0 | 60 0
     # 40 10 | 60 20 | 50 15 | 80 25
     # 70 20 | 140 30 | 100 25 | 180 40
-    0   100 100 100 100 # s1
-    0   2   3   3   102 
+    200 100 100 100 100 # s1
+    201 2   3   3   102 
     2   2   103 102 101 
     2   3   104 4   102 
     102 101 101 101 101 
-    0   100 100 100 100 # s2
+    202 100 100 100 100 # s2
     1   2   3   103 102 
     2   3   5   4   102 
     4   103 104 4   101 
     102 101 101 101 101  
-    0   100 100 100 100 # s3
+    201 100 100 100 100 # s3
     1   2   104 103 102 
     2   104 103 102 101 
     1   2   3   4   5   
