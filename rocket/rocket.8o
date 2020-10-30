@@ -708,15 +708,15 @@
 }
 
 : moon-transfer
-    calculate-transfer-result ALTITUDE_TARGET_1 ALTITUDE_TARGET_1_SHORT
+    calculate-transfer-result M1 M0
     jump transfer-loop
 
 : mars-transfer 
-    calculate-transfer-result ALTITUDE_TARGET_2 ALTITUDE_TARGET_2_SHORT
+    calculate-transfer-result A1 A0
     jump transfer-loop
 
 : saturn-transfer 
-    calculate-transfer-result ALTITUDE_TARGET_3 ALTITUDE_TARGET_3_SHORT
+    calculate-transfer-result S1 S0
     jump transfer-loop
 
 : transfer-loop
@@ -879,11 +879,11 @@
         if altitude != 24 then
     again
 
+    #if transfer-target == 1 then v0 := PROGRESSION_4
+    #if transfer-target == 2 then v0 := PROGRESSION_5
+    #if transfer-target == 3 then v0 := PROGRESSION_6
     v0 := key
-
-    if transfer-target == 1 then v0 := PROGRESSION_4
-    if transfer-target == 2 then v0 := PROGRESSION_5
-    if transfer-target == 3 then v0 := PROGRESSION_6
+    v0 := 0
     jump end-mission
 
 : go-land
@@ -1608,11 +1608,11 @@
     # 40 10 | 60 20 | 50 15 | 80 25
     # 70 20 | 140 30 | 100 25 | 180 40
     200 100 100 100 100 # s1
-    201 2   3   3   102 
+    202 2   3   3   102 
     2   2   103 102 101 
     2   3   104 4   102 
     102 101 101 101 101 
-    202 100 100 100 100 # s2
+    201 100 100 100 100 # s2
     1   2   3   103 102 
     2   3   5   4   102 
     4   103 104 4   101 
