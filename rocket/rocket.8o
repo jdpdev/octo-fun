@@ -372,6 +372,15 @@
     sprite x y 5
 }
 
+:macro end-mission unlock {
+    i := long total-mission-count
+    load v1 - v1
+    v1 += 1
+    save v1 - v1
+
+    unlock
+}
+
 : game-loop
     clear
     hires
@@ -629,27 +638,14 @@
     y := 24
     draw-ground-explosion
 
-    v0 := PROGRESSION_0
-    get-stage-data-offset   game-bottom-stage-data-offset v1 vf
-    if v1 == 12 then v0 := PROGRESSION_1
-    if v1 != 12 then v0 := PROGRESSION_0
-    end-mission
-
+    end-mission unlock-B
     vf := LAUNCH_FAILED
-;
-
-: end-mission
-    i := long total-mission-count
-    load v1 - v1
-    v1 += 1
-    save v1 - v1
-
-    progress-to-v0
 ;
 
 ###### Orbit ##################################################################
 : loop-in-orbit
     altitude := 0
+    unlock-B
 
     loop
         x := ROCKET_X
@@ -774,8 +770,7 @@
     jump start-approach
 
 : return-to-earth
-    v0 := PROGRESSION_2
-    end-mission
+    
 ;
 
 ###### Approach  ##################################################################
@@ -885,12 +880,9 @@
         if altitude != 24 then
     again
 
-    #if transfer-target == 1 then v0 := PROGRESSION_4
-    #if transfer-target == 2 then v0 := PROGRESSION_5
-    #if transfer-target == 3 then v0 := PROGRESSION_6
     v0 := key
-    v0 := 0
-    jump end-mission
+    end-mission unlock-C
+    jump main
 
 : go-land
     clear
@@ -984,6 +976,9 @@
     draw-rocket
     x := 1
     draw-rocket
+
+    if transfer-target == 1 then end-mission unlock-D
+    if transfer-target == 2 then end-mission unlock-E
 ;
 
 ###### Functions ##################################################################
@@ -1019,24 +1014,6 @@
     sprite x y 8
 ;
 
-: progress-to-v0
-    return
-    i := long builder-progression-step
-    load v1 - v1
-
-    if v0 < v1 then return
-
-    v1 := v0
-    save v1 - v1
-
-    i := long builder-progression
-    i += v0
-    load v5
-
-    i := long builder-data
-    save v5
-;
-
 :macro loop-calculate-total-altitude start delta temp {
     temp := start
     loop
@@ -1061,6 +1038,43 @@
     v0 := 1
     loop-calculate-total-altitude v5 v0 v1
     load total-altitude - total-altitude
+;
+
+: unlock-B
+    v0 := PROGRESSION_0
+    progress-to-v0
+;
+
+: unlock-C
+    v0 := PROGRESSION_1
+    progress-to-v0
+;
+
+: unlock-D
+    v0 := PROGRESSION_2
+    progress-to-v0
+;
+
+: unlock-E
+    v0 := PROGRESSION_3
+    progress-to-v0
+;
+
+: progress-to-v0
+    i := long builder-progression-step
+    load v1 - v1
+
+    if v0 < v1 then return
+
+    v1 := v0
+    save v1 - v1
+
+    i := long builder-progression
+    i += v0
+    load v5
+
+    i := long builder-data
+    save v5
 ;
 
 #: accumulate-drift
@@ -1626,22 +1640,15 @@
 : exhaust-plume-4 0x20 0x30 0x80 0x30 0xA0
 
 # num bottom stages | unlocked bottom | num middle stages | unlocked middle | num top stages | unlocked top
-#: builder-data 4 1 5 0 5 0
-: builder-data 4 4 5 5 5 5
+: builder-data 4 1 5 0 5 0
 
 : total-mission-count       0
 : builder-progression-step  0
 : builder-progression  
-    4 2 5 0 5 0 # i + 0
-    4 2 5 2 5 0 # i + 6
-    4 3 5 2 5 0 # i + 12
-    4 3 5 3 5 0 # i + 18
-    4 4 5 3 5 2 # i + 24
-    4 4 5 4 5 2 # i + 30
-    4 4 5 4 5 3 # i + 36
-    4 4 5 5 5 3 # i + 42
-    4 4 5 5 5 4 # i + 48
-    4 4 5 5 5 5 # i + 54
+    4 2 5 2 5 0 # i + 0
+    4 3 5 3 5 2 # i + 6
+    4 4 5 4 5 4 # i + 12
+    4 4 5 5 5 5 # i + 18
 
 # bottom stage | middle stage | top stage
 : rocket-data 0 0 0
