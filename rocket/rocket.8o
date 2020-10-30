@@ -421,6 +421,11 @@
 
     ## Launch ##################################
 
+    if total-altitude == XF begin 
+        draw-rocket
+        jump explode-on-pad
+    end
+
 # initial smoke
     launch-step := 0
 
