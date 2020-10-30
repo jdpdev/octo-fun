@@ -977,9 +977,18 @@
     x := 1
     draw-rocket
 
-    if transfer-target == 1 then end-mission unlock-D
-    if transfer-target == 2 then end-mission unlock-E
+    v0 := key
+    if transfer-target == 1 then jump moon-land-unlock
+    if transfer-target == 2 then jump mars-land-unlock
 ;
+
+: moon-land-unlock
+    end-mission unlock-D
+    jump main
+
+: mars-land-unlock
+    end-mission unlock-E
+    jump main
 
 ###### Functions ##################################################################
 
