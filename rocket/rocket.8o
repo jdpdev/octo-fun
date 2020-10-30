@@ -285,6 +285,20 @@
 
 :const LAUNCH_FAILED    2
 
+:const O0 0   # no orbit
+:const O1 1   # orbit
+:const M0 2   # moon crash
+:const M1 3   # moon land
+:const A0 4   # mars crash
+:const A1 5   # mars land
+:const S0 6   # saturn crash
+:const S1 7   # saturn land
+:const XP 100 # pad failure
+:const XF 101 # launch failure fire
+:const XL 102 # launch failure low
+:const XM 103 # launch failure med
+:const XH 104 # launch failure high
+
 :const ALTITUDE_TARGET_0       64
 :const ALTITUDE_TARGET_1_SHORT 96
 :const ALTITUDE_TARGET_1       128
@@ -387,11 +401,16 @@
     load v4 - v4
     set-stage-data-offset   v4 game-top-stage-data-offset ve
 
+    calculate-total-altitude
+
     ## Startup #################################
     draw-game-start-scene
     
     x := 2
     y := ROCKET_Y
+
+    if total-altitude == XP then jump explode-on-pad
+
     draw-rocket
 
     ## Wait for launch #########################
@@ -457,14 +476,11 @@
 ###### Orbit ##################################################################
     if vf != LAUNCH_FAILED then loop-in-orbit
 
-    v0 := key
-    jump main
+    wait-for-return-to-menu
 ;
 
 ###### Fly ##################################################################
 : loop-fly
-    calculate-total-altitude
-
     # pre-set
     altitude := 0
     #drift-offset := 0
@@ -944,6 +960,17 @@
 ;
 
 ###### Functions ##################################################################
+
+: wait-for-return-to-menu
+    v0 := key
+    jump main
+
+: explode-on-pad
+    y -= 6
+    x -= 1
+    draw-explosion
+    wait-for-return-to-menu
+;
 
 : draw-ground
     x := 0
@@ -1545,21 +1572,6 @@
     18 2 30 3 0 0 0 0
     24 4 40 4 0 0 0 0
 
-
-:const O0 0   # no orbit
-:const O1 1   # orbit
-:const M0 2   # moon crash
-:const M1 3   # moon land
-:const A0 4   # mars crash
-:const A1 5   # mars land
-:const S0 6   # saturn crash
-:const S1 7   # saturn land
-:const XP 100 # pad failure
-:const XF 101 # launch failure fire
-:const XL 102 # launch failure low
-:const XM 103 # launch failure med
-:const XH 104 # launch failure high
-
 # stages = XYZ
 # X: X * 25 
 # Y: X + Y * 5
@@ -1574,26 +1586,27 @@
     # 20 0 | 45 0 | 30 0 | 60 0
     # 40 10 | 60 20 | 50 15 | 80 25
     # 70 20 | 140 30 | 100 25 | 180 40
-    O0 XP XP XP XP # s1
-    O0 M0 M1 M1 XL 
-    M0 M0 XM XL XF 
-    M0 M1 XH A0 XL 
-    XL XF XF XF XF 
-    O0 XP XP XP XP # s2
-    O1 M0 M1 XM XL 
-    M0 M1 A1 A0 XL 
-    A0 XM XH A0 XF 
-    XL XF XF XF XF  
-    O0 XP XP XP XP # s3
-    O1 M0 XH XM XL 
-    M0 XH XM XL XF 
-    O1 M0 M1 A0 A1 
-    M0 M1 XM A0 S0 
-    A0 XP XP XP XP # s4
-    M0 M1 XM A0 XL 
-    M1 A0 M1 XM XF 
-    A0 XH A1 A0 S0 
-    A1 S0 XM S0 S1
+    0   100 100 100 100 # s1
+    0   2   3   3   102 
+    2   2   103 102 101 
+    2   3   104 4   102 
+    102 101 101 101 101 
+    0   100 100 100 100 # s2
+    1   2   3   103 102 
+    2   3   5   4   102 
+    4   103 104 4   101 
+    102 101 101 101 101  
+    0   100 100 100 100 # s3
+    1   2   104 103 102 
+    2   104 103 102 101 
+    1   2   3   4   5   
+    2   3   103 4   6   
+    4   100 100 100 100 # s4
+    2   3   103 4   102 
+    3   4   3   103 101 
+    4   104 5   4   6   
+    5   6   103 6   7  
+#:monitor rocket-altitudes "100:%1i\n101:%1i\n102:%1i\n103:%1i\n104:%1i"
 
 : builder-ui-dot 0x80
 : builder-ui-arrow 0x18 0x18 0x99 0xDB 0x7E 0x3C 0x18
