@@ -905,16 +905,39 @@
     x := altitude
     y := ROCKET_Y
 
+    v0 := 0
+    x -= 3
+    y -= 1
+    draw-blast-tail
+
     loop
-        draw-rocket
-        altitude -= 4
         x := altitude
+        y := ROCKET_Y
+
         draw-rocket
+        x -= 3
+        y -= 1
+        draw-blast-tail
+        altitude -= 4
+
+        vf := 0b1
+        v0 ^= vf
+
+        x := altitude
+        y += 1
+        draw-rocket
+        x -= 3
+        y -= 1
+        draw-blast-tail
+        
         wait-for-frame
 
         if altitude != 3 then
     again
 
+    draw-blast-tail
+    x += 3
+    y += 1
     draw-rocket
     x := 1
     draw-rocket
@@ -1062,6 +1085,20 @@
     x -= draw-rocket-temp
     get-stage-x-offset      game-bottom-stage-data-offset draw-rocket-temp
     x -= draw-rocket-temp
+;
+
+: draw-blast-tail
+    plane 3
+    if v0 == 0 then i := long blast-tail-1
+    if v0 == 1 then i := long blast-tail-2
+    sprite x y 15
+;
+
+: draw-blast-tail-reverse
+    plane 3
+    if v0 == 0 then i := long blast-tail-2
+    if v0 == 1 then i := long blast-tail-1
+    sprite x y 15
 ;
 
 : draw-explosion
