@@ -1545,6 +1545,21 @@
     18 2 30 3 0 0 0 0
     24 4 40 4 0 0 0 0
 
+
+:const O0 0   # no orbit
+:const O1 1   # orbit
+:const M0 2   # moon crash
+:const M1 3   # moon land
+:const A0 4   # mars crash
+:const A1 5   # mars land
+:const S0 6   # saturn crash
+:const S1 7   # saturn land
+:const XP 100 # pad failure
+:const XF 101 # launch failure fire
+:const XL 102 # launch failure low
+:const XM 103 # launch failure med
+:const XH 104 # launch failure high
+
 # stages = XYZ
 # X: X * 25 
 # Y: X + Y * 5
@@ -1559,26 +1574,26 @@
     # 20 0 | 45 0 | 30 0 | 60 0
     # 40 10 | 60 20 | 50 15 | 80 25
     # 70 20 | 140 30 | 100 25 | 180 40
-    20  70  130 95  160 # s1
-    50  100 160 125 190 
-    60  110 170 135 200 
-    55  105 165 130 195 
-    75  125 185 150 215 
-    45  95  155 120 185 # s2
-    75  125 185 150 215 
-    85  135 195 160 225 
-    80  130 190 155 220 
-    100 150 210 175 240 
-    30  80  140 105 170 # s3
-    60  110 170 135 200 
-    70  120 180 145 210 
-    65  115 175 140 205 
-    85  135 195 160 225 
-    60  110 170 135 200 # s4
-    90  140 200 165 230 
-    100 150 210 175 240 
-    95  145 205 170 235 
-    115 165 225 190 255
+    O0 XP XP XP XP # s1
+    O0 M0 M1 M1 XL 
+    M0 M0 XM XL XF 
+    M0 M1 XH A0 XL 
+    XL XF XF XF XF 
+    O0 XP XP XP XP # s2
+    O1 M0 M1 XM XL 
+    M0 M1 A1 A0 XL 
+    A0 XM XH A0 XF 
+    XL XF XF XF XF  
+    O0 XP XP XP XP # s3
+    O1 M0 XH XM XL 
+    M0 XH XM XL XF 
+    O1 M0 M1 A0 A1 
+    M0 M1 XM A0 S0 
+    A0 XP XP XP XP # s4
+    M0 M1 XM A0 XL 
+    M1 A0 M1 XM XF 
+    A0 XH A1 A0 S0 
+    A1 S0 XM S0 S1
 
 : builder-ui-dot 0x80
 : builder-ui-arrow 0x18 0x18 0x99 0xDB 0x7E 0x3C 0x18

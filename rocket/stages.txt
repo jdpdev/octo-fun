@@ -1,0 +1,53 @@
+X - fail
+0 - no orbit
+1 - orbit
+2 - moon crash
+3 - moon land
+4 - mars crash
+5 - mars land
+6 - saturn crash
+7 - saturn land
+         0    2    3    4    5
+  100 | 00 | 01 | 02 | 03 | 04
+  ----+----+----+----+----+----       
+0 100 | A0   --   --   --   --                   
+2 110 | B0   C2   D3   D3   EX
+3 120 | C2   C2   DX   DX   EX
+4 130 | D2   D3   DX   D4   EX
+5 140 | EX   EX   EX   EX   EX
+
+         0    2    3    4    5
+  200 | 00 | 01 | 02 | 03 | 04
+  ----+----+----+----+----+----       
+0 200 | B0   --   --   --   --                          
+2 210 | B1   C2   D3   DX   EX
+3 220 | C2   C3   D5   D3   EX
+4 230 | D4   DX   DX   D4   EX
+5 240 | EX   EX   EX   EX   EX
+
+         0    2    3    4    5
+  300 | 00 | 01 | 02 | 03 | 04
+  ----+----+----+----+----+----       
+0 300 | C0   --   --   --   --                         
+2 310 | C1   C2   DX   DX   EX
+3 320 | C2   CX   DX   DX   EX
+4 330 | D1   D2   D3   D4   E5
+5 340 | E2   E3   EX   E4   E6
+
+         0    2    3    4    5
+  400 | 00 | 01 | 02 | 03 | 04
+  ----+----+----+----+----+----       
+0 400 | D0   --   --   --   --                          
+2 410 | D2   D3   DX   D4   EX
+3 420 | D3   D4   D3   DX   EX
+4 430 | D4   DX   D5   D4   E6
+5 440 | E5   E6   EX   E6   E7
+
+
+progressions
+------------
+A: 1 0 0    no orbit
+B: 2 2 0    reach orbit    (1)
+C: 3 3 2    reach moon     (3)
+D: 4 4 4    reach mars     (5)
+E: 4 5 5    reach saturn   (7)
