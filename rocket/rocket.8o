@@ -885,6 +885,10 @@
     jump main
 
 : go-land
+    draw-rocket
+    wait-for-frame
+    wait-for-frame
+
     clear
     altitude := 127
     x := altitude
