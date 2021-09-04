@@ -1,0 +1,173 @@
+<!-- 0 1 2 1 0 255 254 253 254 255 0 1 2 3 4 5 6 5 4 3 2 1 0 255 254 253 252 251 250 249 248 247 248 249 250 251 252 253 254 255 0 1 2 3 4 5 6 5 4 3 2 1 0 255 254 253 252 253 254 255 0 1 0 0 -->
+
+<html>
+    <head>
+        <style>
+            .altitude-cell {
+                width: 12px; 
+                height: 12px;
+                margin: 0px;
+                border: 1px solid #ddd;
+            }
+
+            .altitude-cell.center {
+                background-color: #acf;
+            }
+
+            .altitude-cell:hover {
+                background-color: #bbb;
+            }
+
+            .altitude-cell.selected {
+                background-color: #aaa;
+            }
+
+            .altitude-cell.selected:hover {
+                background-color: #777;
+            }
+
+            .altitude-cell.selected.fixed {
+                background-color: #036;
+            }
+
+            .container {
+                display: flex;
+            }
+
+            .container .grid {
+                flex: 0 0 auto;
+                margin-right: 16px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <table id="hidden" style="display: none;">
+            <tr id="sample-row">
+                <td 
+                    id="sample-cell" 
+                    class="altitude-cell" 
+                />
+            </tr>
+        </table>
+        <div class="container">
+            <div class="grid">
+                <table 
+                    id="grid"
+                    cellspacing="0"
+                ></table>
+            </div>
+            
+            <div class="controls">
+                <p>
+                    <textarea 
+                        id="output" 
+                        cols="40" 
+                        rows="10"
+                        disabled
+                    ></textarea>
+                </p>
+
+                <p>
+                    <button onClick="copyOutput()">Copy</button>
+                </p>
+            
+                <p>
+                    <textarea 
+                        id="input" 
+                        cols="40" 
+                        rows="10"
+                    ></textarea>
+                </p>
+
+                <p>
+                    <button onClick="readInput()">Apply</button>
+                </p>
+            </div>
+        </div>
+        
+    </body>
+
+    <script>
+        const HEIGHT = 64
+        const WIDTH = 25
+        const HALF_WIDTH = 12
+        let altitudes = new Array(HEIGHT)
+        altitudes.fill(0)
+
+        function toggleCell(altitude, offset) {
+            const currentOffset = altitudes[altitude]
+            altitudes[altitude] = offset
+
+            document.getElementById(buildCellId(altitude, currentOffset + HALF_WIDTH))?.classList.remove('selected')
+            document.getElementById(buildCellId(altitude, offset + HALF_WIDTH))?.classList.add('selected')
+
+            pushOutput()
+        }
+
+        function buildCellId(altitude, offset) {
+            return `${altitude}-${offset}`
+        }
+
+        function pushOutput() {
+            const mapped = altitudes.map(a => a >= 0 ? a : a + 256)
+            document.getElementById("output").value = mapped.join(" ")
+        }
+
+        function readInput() {
+            for (let i = 0; i < altitudes.length; i++) {
+                document.getElementById(buildCellId(i, altitudes[i] + HALF_WIDTH))?.classList.remove('selected')
+            }
+
+            const input = document.getElementById("input").value
+            altitudes = input.split(" ").map(a => +a > 128 ? +a - 256 : +a)
+            
+            for (let i = 0; i < altitudes.length; i++) {
+                document.getElementById(buildCellId(i, altitudes[i] + HALF_WIDTH))?.classList.add('selected')
+            }
+
+            pushOutput()
+        }
+
+        function copyOutput() {
+            const output = document.getElementById("output").value
+
+            navigator.permissions.query({name: "clipboard-write"}).then(result => {
+                if (result.state == "granted" || result.state == "prompt") {
+                    navigator.clipboard.writeText(output)
+                }
+            })
+        }
+
+        // build table
+        const rowTemplate = document.getElementById("sample-row")
+        const cellTemplate = document.getElementById("sample-cell")
+        const table = document.getElementById("grid")
+
+        for (let i = 0; i < HEIGHT; i++) {
+            const newRow = rowTemplate.cloneNode(false)
+            const altitude = HEIGHT - 1 - i
+            newRow.id = `altitude${altitude}`
+
+            for (let j = 0; j < WIDTH; j++) {
+                const newCell = cellTemplate.cloneNode()
+                newCell.id = buildCellId(altitude, j)
+                
+                if (j === HALF_WIDTH) {
+                    newCell.classList.add('center')
+                    newCell.classList.add('selected')
+                }
+
+                if (i === 0 || i === HEIGHT - 1) {
+                    newCell.classList.add('fixed')
+                } else {
+                    newCell.onclick = () => toggleCell(altitude, j - HALF_WIDTH)
+                }
+
+                newRow.appendChild(newCell)
+            }
+
+            table.appendChild(newRow)
+        }
+    </script>
+</html>

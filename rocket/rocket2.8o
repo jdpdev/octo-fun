@@ -1,0 +1,1943 @@
+# Background: #000d14
+# FG1: #00aeff
+# FG2: #fff
+# Blend: #fff
+# Silence: #000d14
+
+:alias x v1
+:alias y v2
+
+: main
+    i := long will-draw-logo
+    load ve - ve
+
+    if ve == 0 then builder-loop
+    game-loop
+;
+
+:macro stage-data-index-shift index {
+    index <<= index
+    index <<= index
+    index <<= index
+}
+
+############################################################
+# Builder
+############################################################
+# temp
+
+# permanent
+:alias selected-bot-stage    v3
+:alias selected-mid-stage    v4
+:alias selected-top-stage    v5
+:alias current-stage         v6
+
+:alias count-bot-stage       v7
+:alias unlock-bot-stage      v8
+:alias count-mid-stage       v9
+:alias unlock-mid-stage      va
+:alias count-top-stage       vb
+:alias unlock-top-stage      vc
+
+:alias stage-offset          vd
+:alias stage-height          ve
+
+:const BOTTOM_STAGE 0
+:const MIDDLE_STAGE 2
+:const TOP_STAGE 4
+:const STAGE_TOO_FAR 6
+:const SHIP_Y 18
+:const UI_Y 36
+:const BOTTOM_STAGE_X 24
+:const MIDDLE_STAGE_X 64
+:const TOP_STAGE_X 104
+
+: builder-loop
+    hires
+
+    current-stage := BOTTOM_STAGE
+    selected-bot-stage := 0
+    selected-mid-stage := 0
+    selected-top-stage := 0
+    
+    i := long builder-data
+    load count-bot-stage - unlock-top-stage
+
+    apply-bottom-stage
+    apply-middle-stage
+    apply-top-stage
+    draw-stage-arrow
+
+    loop
+        v1 := key
+        if v1 == 6 then jump launch-rocket
+        read-input
+    again
+;
+
+: launch-rocket
+    i := long rocket-data
+    save selected-bot-stage - selected-top-stage
+;
+
+: read-input
+    v0 := current-stage
+    if v1 == OCTO_KEY_A then jump0 select-previous
+    if v1 == OCTO_KEY_D then jump0 select-next
+    if v1 == OCTO_KEY_W then jump stage-up
+    if v1 == OCTO_KEY_S then jump stage-down
+;
+
+: stage-up
+    draw-stage-arrow
+    current-stage += 2
+    if current-stage == STAGE_TOO_FAR then current-stage := BOTTOM_STAGE
+    draw-stage-arrow
+;
+
+: stage-down
+    draw-stage-arrow
+    current-stage += -2
+    if current-stage == -2 then current-stage := TOP_STAGE
+    draw-stage-arrow
+;
+
+: draw-stage-arrow
+    if current-stage == BOTTOM_STAGE    then x := BOTTOM_STAGE_X
+    if current-stage == MIDDLE_STAGE    then x := MIDDLE_STAGE_X
+    if current-stage == TOP_STAGE       then x := TOP_STAGE_X
+
+    y := 4
+    i := long builder-ui-arrow
+    plane 1
+    sprite x y 7
+;
+
+:macro select-previous-item draw selected-item min max {
+    if max == 0 then return
+    
+    draw
+
+    selected-item += -1
+    if selected-item == min begin
+        selected-item := max
+        selected-item += -1
+    end
+
+    draw
+}
+
+:macro select-next-item draw selected-item min max {
+    if max == 0 then return
+
+    draw
+
+    selected-item += 1
+    if selected-item == max then selected-item := min
+
+    draw
+}
+
+: select-previous
+    jump select-previous-bottom
+    jump select-previous-middle
+    jump select-previous-top
+;
+
+: select-next
+    jump select-next-bottom
+    jump select-next-middle
+    jump select-next-top
+;
+
+: select-previous-bottom
+    select-previous-item apply-bottom-stage selected-bot-stage -1 unlock-bot-stage
+;
+
+: select-next-bottom
+    select-next-item apply-bottom-stage selected-bot-stage 0 unlock-bot-stage
+;
+
+: select-previous-middle
+    select-previous-item apply-middle-stage selected-mid-stage -1 unlock-mid-stage
+;
+
+: select-next-middle
+    select-next-item apply-middle-stage selected-mid-stage 0 unlock-mid-stage
+;
+
+: select-previous-top
+    select-previous-item apply-top-stage selected-top-stage -1 unlock-top-stage
+;
+
+: select-next-top
+    select-next-item apply-top-stage selected-top-stage 0 unlock-top-stage
+;
+
+:macro apply-stage selected-item data jump-table {
+    v0 := selected-item
+    stage-data-index-shift v0
+
+    i := long data
+    i += v0
+    load stage-offset - stage-height
+
+    v0 := stage-offset
+    jump0 jump-table
+}
+
+: apply-bottom-stage
+    apply-stage selected-bot-stage bottom-stage-data stage-bottom-jump
+;
+
+: apply-middle-stage
+    apply-stage selected-mid-stage middle-stage-data stage-middle-jump
+;
+
+: apply-top-stage
+    apply-stage selected-top-stage top-stage-data stage-top-jump
+;
+
+:macro draw-stage X Y selection max {
+    x := X
+    y := Y
+    plane 1
+    sprite x y 0
+
+    draw-selection-dots x y selection max
+}
+
+:macro draw-selection-dots X Y selection max {
+    X += 12
+    Y := UI_Y
+    v0 := 0
+    loop
+        while v0 != max
+
+        i := long builder-ui-dot
+        sprite X Y 1
+        
+        if v0 == selection begin
+            plane 2
+            sprite X Y 1
+            plane 1
+        end
+
+        Y += 2
+        v0 += 1
+    again
+}
+
+: draw-bottom-stage
+    draw-stage BOTTOM_STAGE_X SHIP_Y selected-bot-stage unlock-bot-stage
+;
+
+: draw-middle-stage
+    draw-stage MIDDLE_STAGE_X SHIP_Y selected-mid-stage unlock-mid-stage
+;
+
+: draw-top-stage
+    draw-stage TOP_STAGE_X SHIP_Y selected-top-stage unlock-top-stage
+;
+
+############################################################
+# Game
+############################################################
+### temps
+# v3, v4, v5 used at start of some steps to cache calculations
+
+# pre-launch
+:alias launch-step v7
+
+# flying mode
+#:alias steering-counter v5
+#:alias drift-offset     v6
+#:alias drift-direction  v7
+#:alias drift-counter    v8
+#:alias drift-step       v9
+
+:alias draw-rocket-temp     v3 # protected in loops using draw-rocket
+:alias scroll-direction     v9 # used within scrolling loops
+:alias altitude-step        v5 # protected in launch sequence and failure
+
+# transfer
+:alias transfer-target      v4
+:alias transfer-result      v5
+
+### permanent
+
+# cache rocket sprite offsets
+# only allows 10 stages when offset is saved as offset
+# TODO 1: save offset as index and expand
+# TODO 2: load offset as needed
+:alias game-bottom-stage-data-offset   va
+:alias game-middle-stage-data-offset   vb
+:alias game-top-stage-data-offset      vc
+
+:alias total-altitude   vd
+:alias altitude         ve
+
+:const ROCKET_X             38
+:const ROCKET_Y             30
+:const SMOKE_LEFT           16
+:const SMOKE_RIGHT          32
+:const LAUNCH_STEP_COUNT    19
+:const LAUNCH_STEP_LAUNCH   2
+:const MIN_DRIFT            15
+:const MAX_DRIFT            49
+
+:const LAUNCH_FAILED    2
+
+:const O0 200 # no orbit low
+:const O1 201 # no orbit med
+:const O2 202 # no orbit high
+:const OO 1   # orbit
+:const M0 2   # moon crash
+:const M1 3   # moon land
+:const A0 4   # mars crash
+:const A1 5   # mars land
+:const S0 6   # saturn crash
+:const S1 7   # saturn land
+:const XP 100 # pad failure
+:const XF 101 # launch failure fire
+:const XL 102 # launch failure low
+:const XM 103 # launch failure med
+:const XH 104 # launch failure high
+
+:const ALTITUDE_TARGET_0       64
+:const ALTITUDE_TARGET_1_SHORT 96
+:const ALTITUDE_TARGET_1       128
+:const ALTITUDE_TARGET_2_SHORT 160
+:const ALTITUDE_TARGET_2       192
+:const ALTITUDE_TARGET_3_SHORT 230
+:const ALTITUDE_TARGET_3       245
+
+:const TRANSFER_MISS    0
+:const TRANSFER_IMPACT  1   
+:const TRANSFER_GOOD    2   
+
+:const PROGRESSION_0    0
+:const PROGRESSION_1    6
+:const PROGRESSION_2    12
+:const PROGRESSION_3    18
+:const PROGRESSION_4    24
+:const PROGRESSION_5    30
+:const PROGRESSION_6    36
+
+:macro get-stage-data-offset in out temp {
+    temp := 0b00011111
+    out := in
+    out &= temp
+}
+
+:macro set-stage-data-offset value to temp {
+    temp := 0b11100000
+    to &= temp
+    to += value
+}
+
+:macro get-stage-x-offset in out {
+    out := in
+    out >>= out
+    out >>= out
+    out >>= out
+    out >>= out
+    out >>= out
+    #out += 1
+    #out >>= out
+}
+
+:macro set-stage-x-offset value to temp {
+    value <<= value
+    value <<= value
+    value <<= value
+    value <<= value
+    value <<= value
+    #value <<= value
+
+    temp := 0b00111111
+    to &= temp
+    to += value
+}
+
+:macro draw-exhaust x y temp {
+    temp := random 0b11
+
+    plane 2
+    if temp == 0 then i := long exhaust-plume-1
+    if temp == 1 then i := long exhaust-plume-2
+    if temp == 2 then i := long exhaust-plume-3
+    if temp == 3 then i := long exhaust-plume-4
+
+    sprite x y 5
+}
+
+:macro end-mission unlock {
+    i := long total-mission-count
+    load v1 - v1
+    v1 += 1
+    save v1 - v1
+
+    unlock
+}
+
+: game-loop
+    clear
+    hires
+
+    game-bottom-stage-data-offset := 0
+    game-middle-stage-data-offset := 0
+    game-top-stage-data-offset := 0
+
+    ## cache rocket information
+    i := long rocket-data
+    load v2
+    
+    i := long bottom-stage-data
+    stage-data-index-shift v0
+    i += v0
+
+    load v4 - v5
+    v4 += 6         # ther
+    set-stage-data-offset   v4 game-bottom-stage-data-offset ve
+    set-stage-x-offset      v5 game-bottom-stage-data-offset ve
+
+    i := long middle-stage-data
+    stage-data-index-shift v1
+    i += v1
+    load v4 - v5
+    set-stage-data-offset   v4 game-middle-stage-data-offset ve
+    set-stage-x-offset      v5 game-middle-stage-data-offset ve
+
+    i := long top-stage-data
+    stage-data-index-shift v2
+    i += v2
+    load v4 - v4
+    set-stage-data-offset   v4 game-top-stage-data-offset ve
+
+    calculate-total-altitude
+
+    ## Startup #################################
+    draw-game-start-scene
+    
+    x := 2
+    y := ROCKET_Y
+
+    if total-altitude == XP then jump explode-on-pad
+
+    draw-rocket
+
+    ## Wait for launch #########################
+    loop
+        v0 := 0x6
+        if v0 -key then
+    again
+
+    ## Launch ##################################
+
+    if total-altitude == XF begin 
+        draw-rocket
+        jump explode-on-pad
+    end
+
+# initial smoke
+    launch-step := 0
+
+    plane 2
+    i := long launch-smoke-left-1
+    x := 1
+    y := SMOKE_LEFT
+    sprite x y 15
+
+    i := long launch-smoke-right-1
+    x := 1
+    y := SMOKE_RIGHT
+    sprite x y 8
+
+    loop
+        step-launch-smoke
+        wait-for-frame
+        if launch-step != LAUNCH_STEP_LAUNCH then
+    again
+
+    ## Lift off ################################
+    v0 := 0
+    altitude-step := 254
+    
+# prep rocket
+    plane 3
+    altitude := 2
+    y := ROCKET_Y
+
+    loop
+        v3 := v0
+        step-launch-smoke
+
+        x := altitude
+        y := ROCKET_Y
+
+        v0 := v3
+        altitude-step += v0
+        if v0 != 255 then v0 += 5
+        if vf == 1 then lift-off-draw-rocket
+
+        wait-for-frame
+
+        if x != 38 then
+    again
+
+###### Fly ##################################################################
+    loop-fly
+
+###### Fall ##################################################################
+    if vf == LAUNCH_FAILED then loop-launch-failed
+
+###### Orbit ##################################################################
+    if vf != LAUNCH_FAILED then loop-in-orbit
+
+    wait-for-return-to-menu
+;
+
+###### Fly ##################################################################
+: loop-fly
+    # pre-set
+    altitude := 0
+    y := ROCKET_Y
+    #drift-offset := 0
+    #drift-direction := 1
+    #drift-counter := 0
+    #drift-step := 75
+    #steering-counter := 100
+
+    # v0 PROTECTED jumping
+    # v1 PROTECTED x position
+    # v2 PROTECTED y position
+    # v3 
+    # v4
+    # v5
+    # v6
+    # v7
+    # v8
+    # v9 PROTECTED scroll direction
+    # vA PROTECTED EXTERNAL draw-rocket: game-bottom-stage-data-offset
+    # vB PROTECTED EXTERNAL draw-rocket: game-middle-stage-data-offset
+    # vC PROTECTED EXTERNAL draw-rocket: game-top-stage-data-offset
+    # vD PROTECTED EXTERNAL total altitude
+    # vE PROTECTED altitude step
+
+    loop
+        x := ROCKET_X
+        #y := ROCKET_Y
+        #y += drift-offset
+
+        i := long rocket-small-wiggle
+        i += altitude
+        load y - y
+        y += ROCKET_Y
+
+        # flip-flop blast tail
+        v0 := 0b1
+        v0 &= altitude
+
+        plane 3
+        x += -3
+        y += -1
+        if v0 == 0 then i := long blast-tail-1
+        if v0 == 1 then i := long blast-tail-2
+        sprite x y 15
+
+        x += -3
+        draw-exhaust x y vf
+
+        x += 6
+        y += 1
+        draw-rocket
+        scroll-left
+
+        i := long rocket-small-wiggle
+        i += altitude
+        load y - y
+        y += ROCKET_Y
+
+        draw-rocket
+
+        # flip-flop blast tail
+        x += -3
+        y += -1
+        if v0 == 0 then i := long blast-tail-2
+        if v0 == 1 then i := long blast-tail-1
+        sprite x y 15
+
+        scroll-direction := 0
+        fill-next-slice
+        wait-for-frame
+
+        altitude += 1
+        vf := 0
+        :monitor altitude "altitude: %1i"
+
+        if altitude == 20 then check-low-failure
+        if altitude == 40 then check-med-failure
+        if altitude == 60 then check-high-failure
+
+        if vf == LAUNCH_FAILED then return
+        if altitude != ALTITUDE_TARGET_0 then
+    again
+;
+
+: check-low-failure
+    if total-altitude == XL then jump draw-air-explosion
+    if total-altitude == O0 then vf := LAUNCH_FAILED
+;
+
+: check-med-failure
+    if total-altitude == XM then jump draw-air-explosion
+    if total-altitude == O1 then vf := LAUNCH_FAILED
+;
+
+: check-high-failure
+    if total-altitude == XH then jump draw-air-explosion
+    if total-altitude == O2 then vf := LAUNCH_FAILED
+;
+
+###### Fall ##################################################################
+: loop-launch-failed
+    # momentum
+
+    altitude-step := 10
+    loop
+        x := ROCKET_X
+        y := ROCKET_Y
+
+        draw-rocket
+        scroll-left
+        draw-rocket
+
+        scroll-direction := 0
+        fill-next-slice
+
+        vf := altitude-step
+        delay := vf
+        
+        loop
+            vf := delay
+            if vf != 0 then
+        again
+
+        altitude-step += 2
+        altitude += 1
+        if altitude-step != 40 then
+    again
+
+    #altitude += 20
+
+    # fall
+    loop
+        x := ROCKET_X
+        y := ROCKET_Y
+
+        draw-rocket
+        scroll-right
+        draw-rocket
+
+        scroll-direction := 123
+        fill-next-slice
+
+        vf := altitude-step
+        delay := vf
+        
+        loop
+            vf := delay
+            if vf != 0 then
+        again
+
+        if altitude-step != 10 then altitude-step += -3
+        altitude += -1
+        if altitude != 0 then
+    again
+
+    # explode
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+
+    x := 40
+    y := 24
+    draw-ground-explosion
+
+    end-mission unlock-B
+    vf := LAUNCH_FAILED
+;
+
+###### Orbit ##################################################################
+: loop-in-orbit
+    altitude := 0
+    unlock-B
+
+    loop
+        x := ROCKET_X
+        y := ROCKET_Y
+
+        draw-rocket
+        scroll-left
+        draw-rocket
+
+        do-orbit-step
+
+        wait-for-frame
+
+        v0 := 0x6
+        if v0 key then jump start-transfer
+
+        altitude += 1
+        if v0 -key then
+    again
+;
+
+: do-orbit-step
+    i := long orbit-altitude-slices
+    i += altitude
+    load v0
+
+    if v0 == 255 then altitude := 0
+    if v0 != 255 then jump0 orbit-slice-jump
+;
+
+: draw-orbit-slice
+    plane 1
+    x := 124
+    y := 24
+    sprite x y 0
+;
+
+###### Transfer ##################################################################
+: start-transfer
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+
+    i := long transfer-at-altitude
+    i += altitude
+    load transfer-target - transfer-target
+    v0 := transfer-target
+    v0 <<= v0
+    jump0 transfer-jump
+;
+
+: transfer-jump
+    jump return-to-earth
+    jump moon-transfer
+    jump mars-transfer
+    jump saturn-transfer
+
+:macro calculate-transfer-result target short {
+    if total-altitude >= target then transfer-result := TRANSFER_GOOD
+    if total-altitude < target  then transfer-result := TRANSFER_IMPACT
+    if total-altitude < short   then transfer-result := TRANSFER_MISS
+}
+
+: moon-transfer
+    calculate-transfer-result M1 M0
+    jump transfer-loop
+
+: mars-transfer 
+    calculate-transfer-result A1 A0
+    jump transfer-loop
+
+: saturn-transfer 
+    calculate-transfer-result S1 S0
+    jump transfer-loop
+
+: transfer-loop
+    altitude := 0
+
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+
+    x += -3
+    y += -1
+
+    plane 3
+    i := long blast-tail-1
+    sprite x y 15
+    
+    loop
+        v0 := 0b1
+        v0 &= altitude
+
+        x := ROCKET_X
+        y := ROCKET_Y
+        draw-rocket
+
+        x += -3
+        y += -1
+
+        plane 3
+        if v0 == 0 then i := long blast-tail-1
+        if v0 == 1 then i := long blast-tail-2
+        sprite x y 15
+
+        scroll-left
+
+        if v0 == 0 then i := long blast-tail-2
+        if v0 == 1 then i := long blast-tail-1
+        sprite x y 15
+
+        x := ROCKET_X
+        y := ROCKET_Y
+        draw-rocket
+
+        wait-for-frame
+        altitude += 1
+
+        if altitude != 32 then
+    again
+
+    jump start-approach
+
+: return-to-earth
+    
+;
+
+###### Approach  ##################################################################
+: start-approach
+    altitude := 0
+    x := 124
+    y := 24
+
+    if transfer-target == 1 then i := long moon-far-slice-0
+    if transfer-target == 2 then i := long mars-far-slice-0
+    if transfer-target == 3 then i := long saturn-far-slice-0
+    plane 1
+    sprite x y 0
+    wait-for-frame
+
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+    x := 124
+    y := 24
+    plane 3
+    scroll-left
+    if transfer-target == 1 then i := long moon-far-slice-1
+    if transfer-target == 2 then i := long mars-far-slice-1
+    if transfer-target == 3 then i := long saturn-far-slice-1
+    plane 1
+    sprite x y 0
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+    wait-for-frame
+
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+    x := 124
+    y := 24
+    plane 3
+    scroll-left
+    if transfer-target == 1 then i := long moon-far-slice-2
+    if transfer-target == 2 then i := long mars-far-slice-2
+    if transfer-target == 3 then i := long saturn-far-slice-2
+    plane 1
+    sprite x y 0
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+    wait-for-frame
+
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+    x := 124
+    y := 24
+    plane 3
+    scroll-left
+    if transfer-target == 1 then i := long moon-far-slice-3
+    if transfer-target == 2 then i := long mars-far-slice-3
+    if transfer-target == 3 then i := long saturn-far-slice-3
+    plane 1
+    sprite x y 0
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+    wait-for-frame
+
+    loop
+        x := ROCKET_X
+        y := ROCKET_Y
+        draw-rocket
+
+        scroll-left
+
+        draw-rocket
+        wait-for-frame
+
+        altitude += 1
+        if altitude != 16 then
+    again
+    
+    if transfer-result == TRANSFER_MISS then jump go-long
+    if transfer-result != TRANSFER_MISS then jump go-land
+
+: go-long
+    altitude := 0
+    #x := ROCKET_X
+    #y := ROCKET_Y
+    #draw-rocket
+
+    x := 48
+    y := 24
+
+    loop
+        if transfer-target == 1 then i := long moon-far-slice-0
+        if transfer-target == 2 then i := long mars-far-slice-0
+        if transfer-target == 3 then i := long saturn-far-slice-0
+        plane 1
+        sprite x y 0
+        plane 3
+        scroll-right
+        plane 1
+        sprite x y 0
+
+        wait-for-frame
+
+        altitude += 1
+        if altitude != 24 then
+    again
+
+    v0 := key
+    end-mission unlock-C
+    jump main
+
+: go-land
+    draw-rocket
+    wait-for-frame
+    wait-for-frame
+
+    clear
+    altitude := 127
+    x := altitude
+    y := ROCKET_Y
+    draw-rocket
+    wait-for-frame
+
+    loop
+        x := altitude
+
+        draw-rocket
+        altitude += -4
+        x := altitude
+        draw-rocket
+        
+        wait-for-frame
+        if altitude != 63 then
+    again
+
+    if transfer-result == TRANSFER_GOOD then jump go-touchdown
+    if transfer-result != TRANSFER_GOOD then jump go-crash
+
+: go-crash
+    plane 1
+    draw-ground
+
+    altitude := 63
+    x := altitude
+    y := ROCKET_Y
+
+    loop
+        draw-rocket
+        altitude -= 4
+        x := altitude
+        draw-rocket
+        wait-for-frame
+
+        if altitude != 3 then
+    again
+
+    draw-rocket
+
+    x := 1
+    y := 24
+    draw-ground-explosion
+;
+
+: go-touchdown
+    plane 1
+    draw-ground
+
+    altitude := 63
+    x := altitude
+    y := ROCKET_Y
+
+    v0 := 0
+    x -= 3
+    y -= 1
+    draw-blast-tail
+
+    loop
+        x := altitude
+        y := ROCKET_Y
+
+        draw-rocket
+        x -= 3
+        y -= 1
+        draw-blast-tail
+        altitude -= 4
+
+        vf := 0b1
+        v0 ^= vf
+
+        x := altitude
+        y += 1
+        draw-rocket
+        x -= 3
+        y -= 1
+        draw-blast-tail
+        
+        wait-for-frame
+
+        if altitude != 3 then
+    again
+
+    draw-blast-tail
+    x += 3
+    y += 1
+    draw-rocket
+    x := 1
+    draw-rocket
+
+    v0 := key
+    if transfer-target == 1 then jump moon-land-unlock
+    if transfer-target == 2 then jump mars-land-unlock
+    jump saturn-land-unlock
+;
+
+: moon-land-unlock
+    end-mission unlock-D
+    jump main
+
+: mars-land-unlock
+    end-mission unlock-E
+    jump main
+
+: saturn-land-unlock
+    plane 3
+    altitude := 0
+
+    loop
+        scroll-left
+        wait-for-frame
+        altitude += 1
+
+        if altitude != 6 then
+    again
+
+    x := 124
+    y := 24
+
+    i := long god-0
+    sprite x y 0
+    wait-for-frame
+
+    scroll-left
+    i := long god-1
+    sprite x y 0
+    wait-for-frame
+
+    scroll-left
+    i := long god-2
+    sprite x y 0
+    wait-for-frame
+
+    scroll-left
+    i := long god-3
+    sprite x y 0
+    wait-for-frame
+
+    scroll-left
+    wait-for-frame
+
+    scroll-left
+    wait-for-frame
+
+    scroll-left
+    wait-for-frame
+
+    scroll-left
+    wait-for-frame
+
+    scroll-left
+    wait-for-frame
+
+    scroll-left
+    wait-for-frame
+
+    v0 := key
+    jump main
+;
+
+###### Functions ##################################################################
+
+: wait-for-return-to-menu
+    v0 := key
+    jump main
+
+: explode-on-pad
+    y -= 6
+    x -= 1
+    draw-ground-explosion
+    wait-for-return-to-menu
+;
+
+: draw-ground
+    x := 0
+    y := 0
+    v0 := 0
+
+    loop
+        get-ground-slice
+        v0 += 6
+        y += 8
+        if y != 64 then
+    again
+;
+
+: get-ground-slice
+    jump0 moon-ground-jump
+
+: draw-ground-slice
+    sprite x y 8
+;
+
+:macro loop-calculate-total-altitude start delta temp {
+    temp := start
+    loop
+        while temp != 0
+        i += delta
+        temp += -1
+    again
+}
+
+: calculate-total-altitude
+    # total altitude
+    i := long rocket-data
+    load v3 - v5
+
+    i := long rocket-altitudes
+
+    # first stage
+    v0 := 25
+    loop-calculate-total-altitude v3 v0 v1
+    v0 := 5
+    loop-calculate-total-altitude v4 v0 v1
+    v0 := 1
+    loop-calculate-total-altitude v5 v0 v1
+    load total-altitude - total-altitude
+;
+
+: unlock-B
+    v0 := PROGRESSION_0
+    progress-to-v0
+;
+
+: unlock-C
+    v0 := PROGRESSION_1
+    progress-to-v0
+;
+
+: unlock-D
+    v0 := PROGRESSION_2
+    progress-to-v0
+;
+
+: unlock-E
+    v0 := PROGRESSION_3
+    progress-to-v0
+;
+
+: progress-to-v0
+    i := long builder-progression-step
+    load v1 - v1
+
+    if v0 < v1 then return
+
+    v1 := v0
+    save v1 - v1
+
+    i := long builder-progression
+    i += v0
+    load v5
+
+    i := long builder-data
+    save v5
+;
+
+#: accumulate-drift
+#    v3 := OCTO_KEY_A
+#    if v3 key then jump oppose-drift
+#
+#    v3 := OCTO_KEY_D
+#    if v3 key then jump oppose-drift
+#
+#    full-drift
+#;
+#
+#: oppose-drift
+#    v4 := steering-counter
+#    v4 -= drift-step
+#    drift-counter += v4
+#    if vf == 1 begin 
+#        drift-offset -= drift-direction
+#        if vf == 0 begin
+#
+#        end
+#    end
+#;
+#
+#: full-drift
+#    drift-counter += drift-step
+#    if vf == 1 then drift-offset += drift-direction
+#;
+
+: lift-off-draw-rocket
+# plume
+    if x >= 4 begin
+        x += -4
+        y += -1
+        draw-exhaust x y v3
+        x += 4
+    end
+
+# rocket
+    y += 1
+    draw-rocket
+
+    x += 1
+    draw-rocket
+    altitude := x
+;
+
+# set x and y aliases to position
+# v1        x position
+# v2        y position
+# v3        temporary
+# vA vB vC  rocket image data offsets
+: draw-rocket
+    plane 3
+
+    # bottom
+    get-stage-data-offset   game-bottom-stage-data-offset draw-rocket-temp vf
+    i := long rocket-stage
+    i += draw-rocket-temp
+    sprite x y 3
+
+    # mid
+    get-stage-x-offset      game-bottom-stage-data-offset draw-rocket-temp
+    x += draw-rocket-temp
+    if x > 127 then return
+    get-stage-data-offset   game-middle-stage-data-offset draw-rocket-temp vf
+    i := long rocket-stage
+    i += draw-rocket-temp
+    sprite x y 3
+
+    # top
+    get-stage-x-offset      game-middle-stage-data-offset draw-rocket-temp
+    x += draw-rocket-temp
+    if x > 127 then return
+    get-stage-data-offset   game-top-stage-data-offset draw-rocket-temp vf
+    i := long rocket-stage
+    i += draw-rocket-temp
+    sprite x y 3
+
+    get-stage-x-offset      game-middle-stage-data-offset draw-rocket-temp
+    x -= draw-rocket-temp
+    get-stage-x-offset      game-bottom-stage-data-offset draw-rocket-temp
+    x -= draw-rocket-temp
+;
+
+: draw-blast-tail
+    plane 3
+    if v0 == 0 then i := long blast-tail-1
+    if v0 == 1 then i := long blast-tail-2
+    sprite x y 15
+;
+
+: draw-blast-tail-reverse
+    plane 3
+    if v0 == 0 then i := long blast-tail-2
+    if v0 == 1 then i := long blast-tail-1
+    sprite x y 15
+;
+
+: draw-ground-explosion
+    plane 2
+
+    i := long ground-explosion-0
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-1
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-2
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-3
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-4
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-5
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-6
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-7
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-8
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-9
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+
+    i := long ground-explosion-10
+    sprite x y 0
+    wait-for-frame
+    sprite x y 0
+;
+
+:macro air-explosion-step X Y frame {
+    i := long frame
+    sprite X Y 0
+    wait-for-frame
+    x += 4
+}
+
+: draw-air-explosion
+    x := ROCKET_X
+    y := ROCKET_Y
+    draw-rocket
+
+    plane 2
+    y += -7
+
+    air-explosion-step x y air-explosion-0
+    air-explosion-step x y air-explosion-1
+    air-explosion-step x y air-explosion-2
+    air-explosion-step x y air-explosion-3
+    air-explosion-step x y air-explosion-4
+    air-explosion-step x y air-explosion-5
+    air-explosion-step x y air-explosion-6
+    air-explosion-step x y air-explosion-7
+    air-explosion-step x y air-explosion-8
+    air-explosion-step x y air-explosion-9
+
+    wait-for-return-to-menu
+;
+
+: wait-for-frame
+    vf := 10
+    delay := vf
+    
+    loop
+        vf := delay
+        if vf != 0 then
+    again
+;
+
+: draw-game-start-scene
+    plane 1
+
+    i := long ground-trees
+    v0 := 0
+    v1 := 0
+    sprite v0 v1 15
+
+    i := long ground-plane
+    v1 := 15
+    sprite v0 v1 15
+
+    i := long ground-launcher
+    v1 := 30
+    sprite v0 v1 15
+
+    i := long ground-trees
+    v1 := 45
+    sprite v0 v1 15
+
+    i := long ground-plane
+    v1 := 60
+    sprite v0 v1 15
+		
+    i := long will-draw-logo
+    load ve - ve
+
+    x := 8
+    y := 0
+    i := long sky-full
+
+    loop
+        loop
+            sprite x y 15
+            y += 15
+
+            if ve == 0 then draw-cloud
+            if y != 75 then
+        again
+
+        x += 8
+        y := 0
+
+        if x != 128 then
+    again
+
+    if ve == 1 then draw-logo
+;
+
+: draw-logo
+    x := 80
+    y := 8
+    i := long logo-00
+    sprite x y 0
+
+    y += 15
+    i := long logo-01
+    sprite x y 0
+
+    x += -6
+    y := 8
+    i := long logo-10
+    sprite x y 15
+
+    y += 15
+    i := long logo-11
+    sprite x y 15
+
+    y += 15
+    i := long logo-12
+    sprite x y 15
+
+    vf := 120
+    delay := vf
+
+    loop
+        vf := delay
+        if vf != 0 then
+    again
+
+    x += -7
+    y := 8
+    i := long logo-20
+    sprite x y 15
+
+    ve := 0
+    i := long will-draw-logo
+    save ve - ve
+;
+
+: draw-cloud
+    if x > 64 begin
+        v0 := random 0b111
+        if v0 == 0 begin
+            i := long cloud-1
+            
+            plane 2
+            sprite x y 15
+            plane 1
+            sprite x y 15
+            
+            i := long sky-full
+        end
+    end
+;
+
+: fill-next-slice
+    if scroll-direction != 123 then i := long next-slice-index-table
+    if scroll-direction == 123 then i := long previous-slice-index-table
+    i += altitude
+
+    load v0
+    jump0 select-sky-jump
+; 
+
+: fill-orbit-slice
+
+;
+ 
+: draw-sky-slice
+    if scroll-direction != 123 then x := 124
+    if scroll-direction == 123 then x := 0
+    y := 0
+    plane 1
+
+    loop
+        sprite x y 15
+
+        y += 15
+        if y != 75 then
+    again
+;
+
+: select-sky-jump
+    jump use-sky-1
+    jump use-sky-2
+    jump use-sky-2
+    jump use-sky-3
+    jump use-sky-3
+    jump use-sky-4
+    jump use-sky-4
+    jump use-sky-5
+;
+
+: use-sky-1     i := long sky-1 jump draw-sky-slice
+: use-sky-2     i := long sky-2 jump draw-sky-slice
+: use-sky-3     i := long sky-3 jump draw-sky-slice
+: use-sky-4     i := long sky-4 jump draw-sky-slice
+: use-sky-5     i := long sky-5 jump draw-sky-slice
+
+: step-launch-smoke
+    if launch-step == LAUNCH_STEP_COUNT then return
+
+    v1 := 254
+    pick-launch-smoke
+    v1 := 255
+    pick-launch-smoke
+    launch-step += 1
+    v1 := 254
+    pick-launch-smoke
+    v1 := 255
+    pick-launch-smoke
+;
+
+: pick-launch-smoke
+    v0 := launch-step
+    v0 <<= v0
+    jump0 select-launch-smoke
+;
+
+: select-launch-smoke
+    jump use-launch-smoke-1
+    jump use-launch-smoke-1
+    jump use-launch-smoke-2
+    jump use-launch-smoke-2
+    jump use-launch-smoke-3
+    jump use-launch-smoke-3
+    jump use-launch-smoke-4
+    jump use-launch-smoke-4
+    jump use-launch-smoke-5
+    jump use-launch-smoke-5
+    jump use-launch-smoke-6
+    jump use-launch-smoke-6
+    jump use-launch-smoke-7
+    jump use-launch-smoke-7
+    jump use-launch-smoke-8
+    jump use-launch-smoke-8
+    jump use-launch-smoke-9
+    jump use-launch-smoke-9
+    jump use-launch-smoke-10
+    jump use-launch-smoke-10
+;
+
+: use-launch-smoke-1 
+    if v1 == 254 then i := long launch-smoke-left-1 
+    if v1 == 255 then i := long launch-smoke-right-1 
+    jump draw-launch-smoke
+    
+: use-launch-smoke-2 
+    if v1 == 254 then i := long launch-smoke-left-2 
+    if v1 == 255 then i := long launch-smoke-right-2 
+    jump draw-launch-smoke
+    
+: use-launch-smoke-3 
+    if v1 == 254 then i := long launch-smoke-left-3 
+    if v1 == 255 then i := long launch-smoke-right-3 
+    jump draw-launch-smoke
+
+: use-launch-smoke-4 
+    if v1 == 254 then i := long launch-smoke-left-4 
+    if v1 == 255 then i := long launch-smoke-right-4 
+    jump draw-launch-smoke
+
+: use-launch-smoke-5 
+    if v1 == 254 then i := long launch-smoke-left-5 
+    if v1 == 255 then i := long launch-smoke-right-5 
+    jump draw-launch-smoke
+
+: use-launch-smoke-6 
+    if v1 == 254 then i := long launch-smoke-left-6 
+    if v1 == 255 then i := long launch-smoke-right-6 
+    jump draw-launch-smoke
+
+: use-launch-smoke-7 
+    if v1 == 254 then i := long launch-smoke-left-7 
+    if v1 == 255 then i := long launch-smoke-right-7 
+    jump draw-launch-smoke
+
+: use-launch-smoke-8 
+    if v1 == 254 then i := long launch-smoke-left-8 
+    if v1 == 255 then i := long launch-smoke-right-8 
+    jump draw-launch-smoke
+
+: use-launch-smoke-9 
+    if v1 == 254 then i := long launch-smoke-left-9 
+    if v1 == 255 then i := long launch-smoke-right-9 
+    jump draw-launch-smoke
+
+: use-launch-smoke-10 
+    if v1 == 254 then  i := long launch-smoke-left-10 
+    if v1 == 255 then  i := long launch-smoke-right-10 
+    jump draw-launch-smoke
+
+: draw-launch-smoke
+    plane 2
+    if v1 == 254 then y := SMOKE_LEFT
+    if v1 == 255 then y := SMOKE_RIGHT
+    x := 1
+    sprite x y 15
+;
+
+: stage-bottom-jump
+    i := long stage-bottom-short-thin-1     jump draw-bottom-stage
+    i := long stage-bottom-tall-thin-1      jump draw-bottom-stage
+    i := long stage-bottom-short-fat-1      jump draw-bottom-stage
+    i := long stage-bottom-tall-fat-1       jump draw-bottom-stage
+
+: stage-middle-jump
+    i := long stage-middle-none             jump draw-middle-stage
+    i := long stage-middle-short-thin-1     jump draw-middle-stage
+    i := long stage-middle-tall-thin-1      jump draw-middle-stage
+    i := long stage-middle-short-fat-1      jump draw-middle-stage
+    i := long stage-middle-tall-fat-1       jump draw-middle-stage
+
+: stage-top-jump
+    i := long stage-top-none             jump draw-top-stage
+    i := long stage-top-short-thin-1     jump draw-top-stage
+    i := long stage-top-tall-thin-1      jump draw-top-stage
+    i := long stage-top-short-fat-1      jump draw-top-stage
+    i := long stage-top-tall-fat-1       jump draw-top-stage
+
+: orbit-slice-jump
+    i := long orbit-blank           jump draw-orbit-slice
+    i := long moon-far-slice-0      jump draw-orbit-slice
+    i := long moon-far-slice-1      jump draw-orbit-slice
+    i := long moon-far-slice-2      jump draw-orbit-slice
+    i := long moon-far-slice-3      jump draw-orbit-slice
+    i := long mars-far-slice-0      jump draw-orbit-slice
+    i := long mars-far-slice-1      jump draw-orbit-slice
+    i := long mars-far-slice-2      jump draw-orbit-slice
+    i := long saturn-far-slice-0    jump draw-orbit-slice
+    i := long saturn-far-slice-1    jump draw-orbit-slice
+    i := long saturn-far-slice-2    jump draw-orbit-slice
+    i := long saturn-far-slice-3    jump draw-orbit-slice
+
+: moon-ground-jump
+    i := long ground-moon-1         jump draw-ground-slice
+    i := long ground-moon-2         jump draw-ground-slice
+    i := long ground-moon-3         jump draw-ground-slice
+    i := long ground-moon-4         jump draw-ground-slice
+    i := long ground-moon-5         jump draw-ground-slice
+    i := long ground-moon-6         jump draw-ground-slice
+    i := long ground-moon-7         jump draw-ground-slice
+    i := long ground-moon-8         jump draw-ground-slice
+
+: ground-plane 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F
+: ground-trees 0x7F 0x57 0x0F 0x6F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x4F 0x07 0x4F 0x7F
+: ground-launcher 0x3F 0x3F 0x39 0x01 0x7F 0x3F 0x3F 0x3F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F
+: ground-pad 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x7F 0x3F 0x3F
+
+: ground-moon-1 0x80 0xE0 0xF0 0xE0 0xC0 0xC0 0x80 0x80
+: ground-moon-2 0x80 0xC0 0xA0 0xA0 0x90 0xD0 0xC8 0x84
+: ground-moon-3 0xFC 0xF8 0xF0 0xE0 0xC0 0xE0 0xE0 0xC0
+: ground-moon-4 0xE0 0xF0 0xE0 0xC0 0x80 0x80 0x80 0x80
+: ground-moon-5 0x80 0x80 0x80 0xC0 0xA0 0xC0 0xA0 0x90
+: ground-moon-6 0x98 0xF8 0xB0 0xA0 0xE0 0xE0 0xC0 0x80
+: ground-moon-7 0xC0 0xE0 0xE0 0xC0 0xE0 0xB0 0x98 0x88
+: ground-moon-8 0xC8 0xF0 0xE0 0xC0 0xE0 0xE0 0xC0 0x80
+
+: rocket-stage
+    0x00 0x00 0x00 0x00 0x00 0x00   # none (0)
+    0x00 0xC0 0x00 0x00 0xC0 0x00   # short thin (6)
+    0x00 0xF0 0x00 0x00 0xF0 0x00   # long-thin (12)
+    0xC0 0xC0 0xC0 0xC0 0xC0 0xC0   # short-fat (18)
+    0xF0 0xF0 0xF0 0xF0 0xF0 0xF0
+
+# jump index to which sky to use for each altitude value
+: next-slice-index-table
+    0  0  0  0  0  0  0  0  #0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  
+    2  2  2  2  2  2  2  2  #2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  2  
+    4  4  4  4  4  4  4  4  #4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  
+    6  6  6  6  6  6  6  6  #6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  6  
+    8  8  8  8  8  8  8  8  #8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  
+    10 10 10 10 10 10 10 10 #10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 
+    12 12 12 12 12 12 12 12 #12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 
+    14 14 14 14 14 14 14 14 14 #14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14
+
+: previous-slice-index-table
+    14 14 14 14 14 14 14 14
+    14 14 14 0  0  0  0  0
+    0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0  
+    2  2  2  2  2  2  2  2  
+    4  4  4  4  4  4  4  4  
+    6  6  6  6  6  6  6  6  
+    8  8  8  8  8  8  8  8
+
+: sky-full 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
+: sky-1 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0 0xF0
+: sky-2 0x70 0xF0 0x70 0xF0 0xB0 0xF0 0xB0 0xF0 0xD0 0xF0 0xD0 0xF0 0xF0 0xE0 0xF0
+: sky-3 0x70 0xD0 0x70 0xD0 0xB0 0xE0 0xB0 0xE0 0xD0 0x70 0xD0 0x70 0xE0 0xB0 0xE0
+: sky-4 0x10 0x20 0x10 0x20 0x10 0x80 0x10 0x80 0x40 0x80 0x40 0x80 0x40 0x20 0x40
+: sky-5 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: next-orbit-slice-index-table
+    0 0 0 0 0 0 0 0 2 4 6 8 10 12 14
+;
+
+: cloud-1 0x80 0xC0 0xA0 0x90 0x88 0x88 0x88 0x90 0x98 0xA4 0xC2 0x82 0x84 0x98 0xE0
+
+: launch-smoke-left-1  0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xC0 0xE0 0xC0 0x80
+: launch-smoke-left-2  0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x30 0x68 0xC8 0x90 0xA0 0xC0 0x80
+: launch-smoke-left-3  0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x38 0x6C 0xD2 0xAD 0x52 0xCC 0x80 0x80
+: launch-smoke-left-4  0x00 0x00 0x00 0x00 0x30 0x58 0xA8 0xFC 0xEC 0xD8 0xA8 0x50 0xE0 0x80 
+: launch-smoke-left-5  0x00 0x50 0xE4 0x70 0xB0 0x58 0xB0 0xF4 0x60 0xE8 0xA0 0x50 0x80 0xC0 
+: launch-smoke-left-6  0x00 0x48 0x80 0x28 0x82 0x58 0x20 0x74 0x60 0xF8 0xAC 0x74 0xBC 0xC0 
+: launch-smoke-left-7  0x80 0x24 0x08 0x01 0x88 0x42 0x38 0x4C 0xD6 0xA2 0xFA 0xCE 0x80 0xC0 
+: launch-smoke-left-8  0xA4 0x11 0x40 0x80 0xD0 0x72 0xB8 0x54 0xF4 0xB0 0x50 0xE0 0x80 0x40 
+: launch-smoke-left-9  0xA2 0x10 0x48 0x80 0xC9 0x60 0x81 0x42 0xC0 0xA8 0x00 0x90 0x80 0x40 
+: launch-smoke-left-10 0x28 0x90 0x44 0x20 0x02 0xA0 0x10 0x00 0x80 0x40 0x00 0xA0 0x00 0x40 
+
+: launch-smoke-right-1  0x80 0xC0 0xE0 0xC0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00  
+: launch-smoke-right-2  0x80 0xC0 0xA0 0x90 0xC8 0x68 0x30 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
+: launch-smoke-right-3  0x80 0x80 0xCC 0x52 0xAD 0xD2 0x6C 0x38 0x00 0x00 0x00 0x00 0x00 0x00 0x00 
+: launch-smoke-right-4  0x80 0xE0 0x50 0xA8 0xD8 0xEC 0xFC 0xA8 0x58 0x30 0x00 0x00 0x00 0x00   
+: launch-smoke-right-5  0xC0 0x80 0x50 0xA0 0xE8 0x60 0xF4 0xB0 0x58 0xB0 0x70 0xE4 0x50 0x00   
+: launch-smoke-right-6  0xC0 0xBC 0x74 0xAC 0xF8 0x60 0x74 0x20 0x58 0x82 0x28 0x80 0x48 0x00   
+: launch-smoke-right-7  0xC0 0x80 0xCE 0xFA 0xA2 0xD6 0x4C 0x38 0x42 0x88 0x01 0x08 0x24 0x80   
+: launch-smoke-right-8  0x40 0x80 0xE0 0x50 0xB0 0xF4 0x54 0xB8 0x72 0xD0 0x80 0x40 0x11 0xA4   
+: launch-smoke-right-9  0x40 0x80 0x90 0x00 0xA8 0xC0 0x42 0x81 0x60 0xC9 0x80 0x48 0x10 0xA2   
+: launch-smoke-right-10 0x40 0x00 0xA0 0x00 0x40 0x80 0x00 0x10 0xA0 0x02 0x20 0x44 0x90 0x28
+
+: blast-tail-1 0x00 0x20 0xC0 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x20 0xC0 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: blast-tail-2 0x20 0x40 0x80 0x40 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x20 0x40 0x80 0x40 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: exhaust-plume-1 0x40 0xB0 0x60 0x90 0x40
+: exhaust-plume-2 0x40 0x90 0x60 0xB0 0x40
+: exhaust-plume-3 0x60 0xB0 0x80 0x10 0x80
+: exhaust-plume-4 0x20 0x30 0x80 0x30 0xA0
+
+# num bottom stages | unlocked bottom | num middle stages | unlocked middle | num top stages | unlocked top
+: builder-data 4 1 5 0 5 0  # A
+#: builder-data 4 3 5 3 5 2  # C
+#: builder-data 4 4 5 5 5 5  # E
+
+: total-mission-count       0
+: builder-progression-step  0
+: builder-progression  
+    4 2 5 2 5 0 # B i + 0
+    4 3 5 3 5 2 # C i + 6
+    4 4 5 4 5 4 # D i + 12
+    4 4 5 5 5 5 # E i + 18
+
+# bottom stage | middle stage | top stage
+: rocket-data 0 0 0
+
+# jump offset | world x offset | altitudes x/y/z
+: bottom-stage-data
+    0  2 10 0 0 0 0 0 
+    6  4 20 1 0 0 0 0 
+    12 2 30 2 0 0 0 0 
+    18 4 40 3 0 0 0 0 
+: middle-stage-data
+    0  0 0  0 0 0 0 0 # no stage
+    6  2 10 1 0 0 0 0
+    12 4 20 2 0 0 0 0
+    18 2 30 3 0 0 0 0
+    24 4 40 4 0 0 0 0
+: top-stage-data
+    0  0 0  0 0 0 0 0 # no stage
+    6  2 10 1 0 0 0 0
+    12 4 20 2 0 0 0 0
+    18 2 30 3 0 0 0 0
+    24 4 40 4 0 0 0 0
+
+# stages = XYZ
+# X: X * 25 
+# Y: X + Y * 5
+# Z: X + Y + Z 
+#   100 101 102 103 104
+#   110 111 112 113 114
+#   120 121 122 123 124
+#   130 131 132 133 134
+#   140 141 142 143 144
+# etc
+: rocket-altitudes
+    # 20 0 | 45 0 | 30 0 | 60 0
+    # 40 10 | 60 20 | 50 15 | 80 25
+    # 70 20 | 140 30 | 100 25 | 180 40
+    200 100 100 100 100 # s1
+    202 2   3   3   102 
+    2   2   103 102 101 
+    2   3   104 4   102 
+    102 101 101 101 101 
+    201 100 100 100 100 # s2
+    1   2   3   103 102 
+    2   3   5   4   102 
+    4   103 104 4   101 
+    102 101 101 101 101  
+    201 100 100 100 100 # s3
+    1   2   104 103 102 
+    2   104 103 102 101 
+    1   2   3   4   5   
+    2   3   103 4   6   
+    4   100 100 100 100 # s4
+    2   3   103 4   102 
+    3   4   3   103 101 
+    4   104 5   4   6   
+    5   6   103 6   7  
+#:monitor rocket-altitudes "100:%1i\n101:%1i\n102:%1i\n103:%1i\n104:%1i"
+
+: rocket-small-wiggle
+    0 1 2 1 0 255 254 253 254 255 0 1 2 3 4 5 6 5 4 3 2 1 0 255 254 253 252 251 250 249 248 247 248 249 250 251 252 253 254 255 0 1 2 3 4 5 6 5 4 3 2 1 0 255 254 253 252 253 254 255 0 1 0 0
+
+: builder-ui-dot 0x80
+: builder-ui-arrow 0x18 0x18 0x99 0xDB 0x7E 0x3C 0x18
+
+: stage-bottom-short-thin-1   0x00 0x00 0x00 0x00 0x7F 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x7F 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-bottom-tall-thin-1    0x00 0x00 0x00 0x00 0x7F 0xFF 0x80 0x01 0xFF 0xFF 0x80 0x01 0x7F 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-bottom-short-fat-1    0x7F 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x81 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x7F 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-bottom-tall-fat-1     0x7F 0xFF 0x80 0x01 0xFF 0xFF 0x80 0x01 0x80 0x01 0x80 0x01 0xFF 0xFF 0x80 0x01 0x7F 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: stage-middle-none           0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-middle-short-thin-1   0x00 0x00 0x00 0x00 0x7F 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x7F 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-middle-tall-thin-1    0x00 0x00 0x00 0x00 0x7F 0xFF 0x80 0x01 0xFF 0xFF 0x80 0x01 0x7F 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-middle-short-fat-1    0x7F 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x81 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x7F 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-middle-tall-fat-1     0x7F 0xFF 0x80 0x01 0xFF 0xFF 0x80 0x01 0x80 0x01 0x80 0x01 0xFF 0xFF 0x80 0x01 0x7F 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: stage-top-none           0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-top-short-thin-1   0x00 0x00 0x00 0x00 0x7F 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x7F 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-top-tall-thin-1    0x00 0x00 0x00 0x00 0x7F 0xFF 0x80 0x01 0xFF 0xFF 0x80 0x01 0x7F 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-top-short-fat-1    0x7F 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x81 0x00 0x81 0x00 0xFF 0x00 0x81 0x00 0x7F 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: stage-top-tall-fat-1     0x7F 0xFF 0x80 0x01 0xFF 0xFF 0x80 0x01 0x80 0x01 0x80 0x01 0xFF 0xFF 0x80 0x01 0x7F 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: ground-explosion-0  0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xC0 0x00 0xC0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: ground-explosion-1  0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xC0 0x00 0x20 0x00 0x20 0x00 0xC0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: ground-explosion-2  0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x80 0x00 0x60 0x00 0x10 0x00 0x88 0x00 0x88 0x00 0x10 0x00 0x60 0x00 0x80 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: ground-explosion-3 0x00 0x00 0x00 0x00 0x00 0x00 0xE0 0x00 0x18 0x00 0x04 0x00 0x82 0x00 0xC2 0x00 0x42 0x00 0x82 0x00 0x04 0x00 0x18 0x00 0xE0 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: ground-explosion-4 0x00 0x00 0x00 0x00 0xF0 0x00 0x0E 0x00 0x01 0x00 0x48 0x80 0xE0 0x80 0xA0 0x40 0x60 0x40 0xD0 0x80 0x40 0x80 0x81 0x00 0x0E 0x00 0xF0 0x00 0x00 0x00 0x00 0x00
+: ground-explosion-5 0x00 0x00 0xF8 0x00 0x07 0x00 0x82 0xC0 0x84 0x20 0x50 0x10 0xF0 0x08 0xF8 0x08 0xAC 0x08 0xD8 0x08 0x5C 0x10 0xA2 0x20 0x00 0xC0 0x07 0x00 0xF8 0x00 0x00 0x00
+: ground-explosion-6 0x0C 0x20 0x03 0xC0 0x80 0x30 0xC0 0x0C 0x74 0x02 0x58 0x82 0xF4 0x02 0x7E 0x01 0xAF 0x01 0xDB 0x02 0x5F 0x12 0xB6 0x02 0xFC 0x0C 0xB0 0x30 0x43 0xC0 0x0C 0x00
+: ground-explosion-7 0x00 0xF8 0x00 0x06 0x80 0x01 0xC3 0xE0 0xA6 0x18 0xF4 0x88 0xDD 0xE8 0xFD 0xD8 0xEF 0x38 0xFB 0x68 0x5F 0xD0 0xA7 0x70 0xC1 0xC0 0x80 0x01 0x00 0x06 0x00 0xF8
+: ground-explosion-8 0xC0 0x00 0xA0 0x00 0xE0 0x70 0x40 0xEC 0xA0 0x1E 0xA2 0x8A 0x53 0xEA 0x7D 0xDA 0x8F 0x3A 0xFB 0x6A 0x53 0xD2 0xA0 0x72 0xC0 0xFE 0x40 0x38 0x60 0x00 0xC0 0x00
+: ground-explosion-9 0x00 0x00 0x20 0x78 0xE0 0x5C 0x00 0x46 0x20 0x1E 0xA0 0x02 0x50 0x0E 0x6C 0x02 0x84 0x03 0xD8 0x0B 0x50 0x53 0xA0 0x0E 0x40 0x96 0x80 0xF8 0xC0 0x20 0x40 0x00
+: ground-explosion-10 0x80 0x58 0x00 0x50 0xC0 0x0C 0x00 0x08 0x80 0x1C 0xA0 0x02 0x90 0x0C 0x40 0x02 0x00 0x01 0x80 0x08 0xC0 0x10 0x80 0x08 0x40 0x12 0x00 0x08 0x40 0x28 0x00 0x70
+
+: air-explosion-0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x80 0x00 0x80 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: air-explosion-1 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x40 0x00 0x80 0x00 0xA0 0x00 0x40 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: air-explosion-2 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x20 0x00 0x10 0x00 0x40 0x00 0xC4 0x00 0x00 0x00 0x10 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: air-explosion-3 0x00 0x00 0x00 0x00 0x00 0x00 0x10 0x00 0x04 0x00 0x00 0x00 0x70 0x00 0xE0 0x00 0xBC 0x80 0x68 0x00 0x10 0x00 0x00 0x00 0x04 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: air-explosion-4 0x00 0x00 0x08 0x00 0x01 0x00 0x00 0x00 0x38 0x00 0x69 0x00 0x74 0x00 0xDC 0x00 0xFE 0x00 0x76 0x10 0x5E 0x00 0x3C 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x02 0x00
+: air-explosion-5 0x00 0x40 0x04 0x00 0x00 0x00 0x06 0x00 0x3B 0x10 0x79 0x80 0x74 0xC0 0x5F 0x60 0xFF 0x20 0xD6 0x40 0xEE 0xC0 0x73 0x80 0x3D 0x84 0x1F 0x00 0x00 0x00 0x00 0x80
+: air-explosion-6 0x00 0x00 0x00 0x04 0x07 0x00 0x03 0xC0 0x83 0x40 0xC1 0xE0 0xF4 0xF0 0x5F 0xF0 0xFB 0xA0 0x66 0xC0 0xFE 0xC0 0x6D 0xA0 0xBF 0xA0 0xC7 0x60 0x01 0xC1 0x00 0x00
+: air-explosion-7 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xC0 0x00 0x40 0x01 0xEE 0x04 0xDE 0x0F 0xC7 0x3B 0xFB 0x66 0xF3 0x3E 0xDE 0x2D 0xA0 0x1F 0xA0 0x07 0x60 0x01 0xC0 0x00 0x00
+: air-explosion-8 0x00 0x00 0x00 0x00 0x00 0x10 0x00 0x80 0x04 0x00 0x21 0x00 0x04 0xDA 0x0F 0x40 0x3B 0xF8 0x67 0xF1 0x3E 0xD8 0x17 0xA0 0x13 0x80 0x1E 0x00 0x0D 0x40 0x00 0x00
+: air-explosion-9 0x00 0x00 0x00 0x40 0x00 0x00 0x04 0x00 0x00 0x00 0x21 0x00 0x04 0x4A 0x09 0x40 0x18 0x10 0x44 0x81 0x02 0x48 0x10 0x00 0x00 0x00 0x02 0x00 0x00 0x00 0x00 0x00
+
+: orbit-altitude-slices
+    0  0  0  0  0  0   #0
+    0  0  0  0  0  0   #1
+    6  12 18 24        # moon
+    0  0  0  0  0  0   #3
+    0  0  0  0  0  0   #4
+    0  0  0  0  0  0   #5
+    0  0  0  0  0  0   #6
+    30 36 42           # mars
+    0  0  0  0  0  0   #8
+    0  0  0  0  0  0   #9
+    0  0  0  0  0  0   #10
+    0  0  0  0  0  0   #11
+    48 54 60 66        # saturn
+    0  0  0  0  0  0   #12
+    0  0  0  0  0  0   #13
+    0  0  0  0  0  0   #14
+    0  0  0  0  0  0   #15
+    255
+
+: transfer-at-altitude
+    0  0  0  0  0  0   #0
+    0  0  0  0  0  0   #1
+    1  1  1  1         # moon
+    1  1  1  1  1  1   #3
+    1  1  1  1  1  1   #4
+    1  1  1  1  1  1   #5
+    1  1  1  1  1  1   #6
+    2  2  2            # mars
+    2  2  2  2  2  2   #8
+    2  2  2  2  2  2   #9
+    2  2  2  2  2  2   #10
+    2  2  2  2  2  2   #11
+    3  3  3  3         # saturn
+    3  3  3  3  3  3   #12
+    3  3  3  3  3  3   #13
+    3  3  3  3  3  3   #14
+    3  3  3  3  3  3   #15
+
+: orbit-blank 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: moon-far-slice-0 0x00 0x00 0x00 0x00 0x03 0xC0 0x0E 0xF0 0x1F 0x58 0x1D 0xF8 0x38 0xFC 0x31 0x64 0x3B 0xC4 0x3F 0xA4 0x16 0x08 0x1C 0x98 0x0E 0x70 0x03 0xC0 0x00 0x00 0x00 0x00
+: moon-far-slice-1 0x00 0x00 0x00 0x00 0x3C 0x00 0xEF 0x00 0xF5 0x81 0xDF 0x81 0x8F 0xC3 0x16 0x43 0xBC 0x43 0xFA 0x43 0x60 0x81 0xC9 0x81 0xE7 0x00 0x3C 0x00 0x00 0x00 0x00 0x00
+: moon-far-slice-2 0x00 0x00 0x00 0x00 0xC0 0x03 0xF0 0x0E 0x58 0x1F 0xF8 0x1D 0xFC 0x38 0x64 0x31 0xC4 0x3B 0xA4 0x3F 0x08 0x16 0x98 0x1C 0x70 0x0E 0xC0 0x03 0x00 0x00 0x00 0x00
+: moon-far-slice-3 0x00 0x00 0x00 0x00 0x00 0x3C 0x00 0xEF 0x81 0xF5 0x81 0xDF 0xC3 0x8F 0x43 0x16 0x43 0xBC 0x43 0xFA 0x81 0x60 0x81 0xC9 0x00 0xE7 0x00 0x3C 0x00 0x00 0x00 0x00
+
+: mars-far-slice-0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x03 0xC0 0x07 0xE0 0x0F 0xB0 0x0F 0x50 0x0B 0xF0 0x0D 0xF0 0x07 0xE0 0x03 0xC0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: mars-far-slice-1 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x3C 0x00 0x7E 0x00 0xFB 0x00 0xF5 0x00 0xBF 0x00 0xDF 0x00 0x7E 0x00 0x3C 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: mars-far-slice-2 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xC0 0x03 0xE0 0x07 0xB0 0x0F 0x50 0x0F 0xF0 0x0B 0xF0 0x0D 0xE0 0x07 0xC0 0x03 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: mars-far-slice-3 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: saturn-far-slice-0 0x00 0x00 0x00 0x00 0x18 0x00 0x1C 0x00 0x0D 0xC0 0x05 0xE0 0x0B 0xF0 0x0B 0xF0 0x0D 0xF0 0x0E 0xF0 0x07 0x60 0x03 0xB0 0x00 0x38 0x00 0x18 0x00 0x00 0x00 0x00
+: saturn-far-slice-1 0x00 0x00 0x00 0x00 0x80 0x01 0xC0 0x01 0xDC 0x00 0x5E 0x00 0xBF 0x00 0xBF 0x00 0xDF 0x00 0xEF 0x00 0x76 0x00 0x3B 0x00 0x03 0x80 0x01 0x80 0x00 0x00 0x00 0x00
+: saturn-far-slice-2 0x00 0x00 0x00 0x00 0x00 0x18 0x00 0x1C 0xC0 0x0D 0xE0 0x05 0xF0 0x0B 0xF0 0x0B 0xF0 0x0D 0xF0 0x0E 0x60 0x07 0xB0 0x03 0x38 0x00 0x18 0x00 0x00 0x00 0x00 0x00
+: saturn-far-slice-3 0x00 0x00 0x00 0x00 0x01 0x80 0x01 0xC0 0x00 0xDC 0x00 0x5E 0x00 0xBF 0x00 0xBF 0x00 0xDF 0x00 0xEF 0x00 0x76 0x00 0x3B 0x80 0x03 0x80 0x01 0x00 0x00 0x00 0x00
+
+: simple-circle 0x00 0x00 0x00 0x00 0x03 0xC0 0x0F 0xF0 0x1F 0xF8 0x1F 0xF8 0x3F 0xFC 0x3F 0xFC 0x3F 0xFC 0x3F 0xFC 0x1F 0xF8 0x1F 0xF8 0x0F 0xF0 0x03 0xC0 0x00 0x00 0x00 0x00
+
+: will-draw-logo 1
+
+: logo-00 0x09 0x1E 0x12 0xA1 0x14 0xA1 0x09 0x1E 0x00 0x00 0x1F 0x1E 0x04 0xA1 0x04 0xA1 0x03 0x12 0x00 0x00 0x1F 0x01 0x02 0xBF 0x02 0x81 0x1F 0x01 0x00 0x00 0x00 0x00
+: logo-01 0x0F 0x1E 0x10 0xA1 0x10 0xA1 0x09 0x1E 0x00 0x00 0x0F 0x00 0x12 0x80 0x12 0x80 0x10 0x80 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: logo-10 0x3E 0x09 0x09 0x06 0x00 0x3E 0x09 0x19 0x26 0x00 0x1E 0x21 0x21 0x1E 0x00
+: logo-11 0x1E 0x21 0x29 0x1A 0x00 0x3E 0x09 0x19 0x26 0x00 0x3E 0x05 0x05 0x3E 0x00
+: logo-12 0x3E 0x01 0x06 0x01 0x01 0x3E 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+: logo-20 0x32 0x29 0x29 0x26 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+: god-0 0x00 0x00 0x03 0xFC 0xFE 0x3E 0xFC 0x1F 0xE4 0x1F 0x84 0x1F 0x86 0x3F 0x87 0xFF 0x87 0xFF 0x87 0xFE 0x87 0x8E 0x97 0x04 0xFF 0x00 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x01 0xC0 0x02 0xE0 0x1B 0xE0 0x4B 0xE0 0x49 0xC0 0x48 0x00 0x48 0x00 0x48 0x00 0x48 0x70 0x68 0xF8 0x00 0xF8 0x00 0xD8 0x00 0xF0 0x00 0x00
+: god-1 0x00 0x00 0x3F 0xC0 0xE3 0xEF 0xC1 0xFF 0x41 0xFE 0x41 0xF8 0x63 0xF8 0x7F 0xF8 0x7F 0xF8 0x7F 0xE8 0x78 0xE8 0x70 0x49 0xF0 0x0F 0xF0 0x0F 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x1C 0x00 0x2E 0x00 0xBE 0x01 0xBE 0x04 0x9C 0x04 0x80 0x04 0x80 0x04 0x80 0x04 0x87 0x04 0x8F 0x86 0x0F 0x80 0x0D 0x80 0x0F 0x00 0x00 0x00
+: god-2 0x00 0x00 0xFC 0x03 0x3E 0xFE 0x1F 0xFC 0x1F 0xE4 0x1F 0x84 0x3F 0x86 0xFF 0x87 0xFF 0x87 0xFE 0x87 0x8E 0x87 0x04 0x97 0x00 0xFF 0x00 0xFF 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xC0 0x01 0xE0 0x02 0xE0 0x1B 0xE0 0x4B 0xC0 0x49 0x00 0x48 0x00 0x48 0x00 0x48 0x70 0x48 0xF8 0x68 0xF8 0x00 0xD8 0x00 0xF0 0x00 0x00 0x00
+: god-3 0x00 0x00 0xC0 0x3F 0xEF 0xE3 0xFF 0xC1 0xFE 0x41 0xF8 0x41 0xF8 0x63 0xF8 0x7F 0xF8 0x7F 0xE8 0x7F 0xE8 0x78 0x49 0x70 0x0F 0xF0 0x0F 0xF0 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x1C 0x00 0x2E 0x01 0xBE 0x04 0xBE 0x04 0x9C 0x04 0x80 0x04 0x80 0x04 0x80 0x04 0x87 0x86 0x8F 0x80 0x0F 0x80 0x0D 0x00 0x0F 0x00 0x00
